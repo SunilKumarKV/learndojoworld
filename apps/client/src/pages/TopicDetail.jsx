@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import DoubtSection from '../components/doubts/DoubtSection';
 import AppLayout from '../components/layout/AppLayout';
 import TopicRenderer from '../components/topics/TopicRenderer';
 import { useAuth } from '../features/auth/AuthContext';
@@ -79,6 +80,8 @@ function TopicDetail() {
           </section>
 
           <TopicRenderer topic={topic} />
+
+          <DoubtSection topic={topic} />
         </div>
       ) : null}
     </AppLayout>

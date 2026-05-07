@@ -26,6 +26,40 @@ enum NodeProgressStatus {
   NEEDS_REVISION
 }
 
+enum StudyPlanStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  SKIPPED
+}
+
+enum StudySessionStatus {
+  ACTIVE
+  COMPLETED
+}
+
+enum RevisionItemStatus {
+  DUE
+  COMPLETED
+  SNOOZED
+  ARCHIVED
+}
+
+enum DoubtStatus {
+  OPEN
+  RESOLVED
+  FLAGGED
+  HIDDEN
+  CLOSED
+}
+
+enum DoubtReportStatus {
+  PENDING
+  REVIEWED
+  DISMISSED
+  ACTIONED
+}
+
 enum TopicStatus {
   DRAFT
   SUBMITTED
@@ -83,6 +117,17 @@ model User {
   reviewEvents    ContentReviewEvent[]  @relation("ReviewEventActor")
   roadmapProgress UserRoadmapProgress[]
   nodeProgress    UserNodeProgress[]
+  quizAttempts    QuizAttempt[]
+  studyPlans      StudyPlan[]
+  studySessions   StudySession[]
+  revisionItems   RevisionItem[]
+  learnerStats    LearnerStats?
+  doubts          Doubt[]               @relation("DoubtAuthor")
+  doubtReplies    DoubtReply[]          @relation("DoubtReplyAuthor")
+  officialReplies DoubtReply[]          @relation("OfficialDoubtReplyMarker")
+  doubtVotes      DoubtVote[]
+  doubtReports    DoubtReport[]         @relation("DoubtReportReporter")
+  reviewedReports DoubtReport[]         @relation("DoubtReportReviewer")
   createdAt       DateTime              @default(now())
   updatedAt       DateTime              @updatedAt
 }
@@ -110,6 +155,8 @@ model Roadmap {
   createdBy       User                  @relation("RoadmapCreator", fields: [createdById], references: [id])
   nodes           RoadmapNode[]
   learnerProgress UserRoadmapProgress[]
+  studyPlans      StudyPlan[]
+  studySessions   StudySession[]
   createdAt       DateTime              @default(now())
   updatedAt       DateTime              @updatedAt
 
@@ -130,6 +177,10 @@ model RoadmapNode {
   prerequisites RoadmapNode[]      @relation("NodePrerequisites")
   unlocks       RoadmapNode[]      @relation("NodePrerequisites")
   userProgress  UserNodeProgress[]
+  studyPlans    StudyPlan[]
+  studySessions StudySession[]
+  revisionItems RevisionItem[]
+  doubts        Doubt[]
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
 
@@ -192,6 +243,10 @@ model TopicPage {
   publishedAt   DateTime?
   blocks        ContentBlock[]
   lessons       Lesson[]
+  quizzes       TopicPageQuiz[]
+  studySessions StudySession[]
+  revisionItems RevisionItem[]
+  doubts        Doubt[]
   reviewEvents  ContentReviewEvent[]
   createdAt     DateTime             @default(now())
   updatedAt     DateTime             @updatedAt
@@ -281,6 +336,18 @@ model Lesson {
   @@index([topicPageId])
 }
 
+model TopicPageQuiz {
+  id          String    @id @default(cuid())
+  topicPageId String
+  topicPage   TopicPage @relation(fields: [topicPageId], references: [id], onDelete: Cascade)
+  quiz        Quiz      @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  quizId      String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([topicPageId, quizId])
+}
+
 model LessonContentBlock {
   id          String           @id @default(cuid())
   lessonId    String
@@ -300,14 +367,19 @@ model LessonContentBlock {
 }
 
 model Quiz {
-  id           String         @id @default(cuid())
-  lessonId     String         @unique
-  lesson       Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  id           String          @id @default(cuid())
+  lessonId     String?         @unique
+  lesson       Lesson?         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
   title        String
   instructions String?
+  passingScore Int             @default(70)
   questions    QuizQuestion[]
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  topicPages   TopicPageQuiz[]
+  attempts     QuizAttempt[]
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([lessonId])
 }
 
 model QuizQuestion {
@@ -320,10 +392,222 @@ model QuizQuestion {
   correctAnswer String
   explanation   String?
   order         Int              @default(0)
+  answers       QuizAnswer[]
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
 
   @@index([quizId, order])
+}
+
+model QuizAttempt {
+  id               String       @id @default(cuid())
+  quizId           String
+  quiz             Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  userId           String
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  score            Int
+  totalQuestions   Int
+  timeTakenSeconds Int?
+  answers          QuizAnswer[]
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@index([quizId, userId])
+  @@index([userId, createdAt])
+}
+
+model QuizAnswer {
+  id             String       @id @default(cuid())
+  attemptId      String
+  attempt        QuizAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  questionId     String
+  question       QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selectedAnswer String
+  isCorrect      Boolean
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([attemptId, questionId])
+  @@index([attemptId])
+}
+
+model StudyPlan {
+  id               String          @id @default(cuid())
+  userId           String
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roadmapId        String?
+  roadmap          Roadmap?        @relation(fields: [roadmapId], references: [id], onDelete: SetNull)
+  roadmapNodeId    String?
+  roadmapNode      RoadmapNode?    @relation(fields: [roadmapNodeId], references: [id], onDelete: SetNull)
+  title            String
+  description      String?
+  plannedDate      DateTime
+  estimatedMinutes Int             @default(30)
+  status           StudyPlanStatus @default(PLANNED)
+  completedAt      DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([userId, plannedDate])
+  @@index([userId, status])
+  @@index([roadmapId])
+  @@index([roadmapNodeId])
+}
+
+model StudySession {
+  id              String             @id @default(cuid())
+  userId          String
+  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roadmapId       String?
+  roadmap         Roadmap?           @relation(fields: [roadmapId], references: [id], onDelete: SetNull)
+  roadmapNodeId   String?
+  roadmapNode     RoadmapNode?       @relation(fields: [roadmapNodeId], references: [id], onDelete: SetNull)
+  topicPageId     String?
+  topicPage       TopicPage?         @relation(fields: [topicPageId], references: [id], onDelete: SetNull)
+  title           String?
+  startedAt       DateTime           @default(now())
+  endedAt         DateTime?
+  durationMinutes Int?
+  status          StudySessionStatus @default(ACTIVE)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@index([userId, startedAt])
+  @@index([userId, status])
+  @@index([roadmapId])
+  @@index([roadmapNodeId])
+  @@index([topicPageId])
+}
+
+model RevisionItem {
+  id            String             @id @default(cuid())
+  userId        String
+  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roadmapNodeId String?
+  roadmapNode   RoadmapNode?       @relation(fields: [roadmapNodeId], references: [id], onDelete: SetNull)
+  topicPageId   String?
+  topicPage     TopicPage?         @relation(fields: [topicPageId], references: [id], onDelete: SetNull)
+  title         String
+  reason        String?
+  dueAt         DateTime
+  confidence    Int                @default(50)
+  intervalDays  Int                @default(1)
+  status        RevisionItemStatus @default(DUE)
+  completedAt   DateTime?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@index([userId, dueAt])
+  @@index([userId, status])
+  @@index([roadmapNodeId])
+  @@index([topicPageId])
+}
+
+model LearnerStats {
+  id                String    @id @default(cuid())
+  userId            String    @unique
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  currentStreak     Int       @default(0)
+  longestStreak     Int       @default(0)
+  totalStudyMinutes Int       @default(0)
+  lastStudiedAt     DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+model Doubt {
+  id                    String        @id @default(cuid())
+  title                 String
+  content               String
+  status                DoubtStatus   @default(OPEN)
+  topicPageId           String?
+  topicPage             TopicPage?    @relation(fields: [topicPageId], references: [id], onDelete: SetNull)
+  roadmapNodeId         String?
+  roadmapNode           RoadmapNode?  @relation(fields: [roadmapNodeId], references: [id], onDelete: SetNull)
+  videoTimestampSeconds Int?
+  authorId              String
+  author                User          @relation("DoubtAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  acceptedReplyId       String?       @unique
+  acceptedReply         DoubtReply?   @relation("AcceptedDoubtReply", fields: [acceptedReplyId], references: [id], onDelete: SetNull)
+  moderationReason      String?
+  moderatedAt           DateTime?
+  replies               DoubtReply[]  @relation("DoubtReplies")
+  votes                 DoubtVote[]
+  reports               DoubtReport[]
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  @@index([topicPageId, createdAt])
+  @@index([roadmapNodeId, createdAt])
+  @@index([authorId, createdAt])
+  @@index([status])
+}
+
+model DoubtReply {
+  id                 String        @id @default(cuid())
+  doubtId            String
+  doubt              Doubt         @relation("DoubtReplies", fields: [doubtId], references: [id], onDelete: Cascade)
+  authorId           String
+  author             User          @relation("DoubtReplyAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  content            String
+  isOfficial         Boolean       @default(false)
+  officialMarkedById String?
+  officialMarkedBy   User?         @relation("OfficialDoubtReplyMarker", fields: [officialMarkedById], references: [id], onDelete: SetNull)
+  officialMarkedAt   DateTime?
+  isHidden           Boolean       @default(false)
+  moderationReason   String?
+  moderatedAt        DateTime?
+  acceptedFor        Doubt?        @relation("AcceptedDoubtReply")
+  votes              DoubtVote[]
+  reports            DoubtReport[]
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  @@index([doubtId, createdAt])
+  @@index([authorId, createdAt])
+  @@index([isOfficial])
+  @@index([isHidden])
+}
+
+model DoubtVote {
+  id        String      @id @default(cuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  doubtId   String?
+  doubt     Doubt?      @relation(fields: [doubtId], references: [id], onDelete: Cascade)
+  replyId   String?
+  reply     DoubtReply? @relation(fields: [replyId], references: [id], onDelete: Cascade)
+  value     Int         @default(1)
+  createdAt DateTime    @default(now())
+
+  @@unique([userId, doubtId])
+  @@unique([userId, replyId])
+  @@index([doubtId])
+  @@index([replyId])
+}
+
+model DoubtReport {
+  id              String            @id @default(cuid())
+  reporterId      String
+  reporter        User              @relation("DoubtReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  doubtId         String?
+  doubt           Doubt?            @relation(fields: [doubtId], references: [id], onDelete: Cascade)
+  replyId         String?
+  reply           DoubtReply?       @relation(fields: [replyId], references: [id], onDelete: Cascade)
+  reason          String
+  status          DoubtReportStatus @default(PENDING)
+  reviewedById    String?
+  reviewedBy      User?             @relation("DoubtReportReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt      DateTime?
+  resolutionNotes String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@unique([reporterId, doubtId])
+  @@unique([reporterId, replyId])
+  @@index([doubtId, createdAt])
+  @@index([replyId, createdAt])
+  @@index([status, createdAt])
 }
 
 model ContentReviewEvent {

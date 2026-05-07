@@ -1,10 +1,15 @@
 import { Link } from 'react-router-dom';
 import AppLayout from '../components/layout/AppLayout';
+import StudyTrackerDashboard from '../components/studyTracker/StudyTrackerDashboard';
 import { ROLES } from '../constants/roles';
 import { useAuth } from '../features/auth/AuthContext';
 
 function Dashboard() {
   const { user } = useAuth();
+
+  if (user.role === ROLES.LEARNER) {
+    return <StudyTrackerDashboard />;
+  }
 
   return (
     <AppLayout title="Dashboard">

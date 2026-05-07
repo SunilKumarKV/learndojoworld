@@ -1,0 +1,25 @@
+export const STUDY_PLAN_STATUS = Object.freeze({
+  PLANNED: 'PLANNED',
+  IN_PROGRESS: 'IN_PROGRESS',
+  COMPLETED: 'COMPLETED',
+  SKIPPED: 'SKIPPED',
+});
+
+export const STUDY_SESSION_STATUS = Object.freeze({
+  ACTIVE: 'ACTIVE',
+  COMPLETED: 'COMPLETED',
+});
+
+export const REVISION_ITEM_STATUS = Object.freeze({
+  DUE: 'DUE',
+  COMPLETED: 'COMPLETED',
+  SNOOZED: 'SNOOZED',
+  ARCHIVED: 'ARCHIVED',
+});
+
+export const STUDY_PLAN_LABELS = Object.freeze({
+  [STUDY_PLAN_STATUS.PLANNED]: 'Planned',
+  [STUDY_PLAN_STATUS.IN_PROGRESS]: 'In progress',
+  [STUDY_PLAN_STATUS.COMPLETED]: 'Completed',
+  [STUDY_PLAN_STATUS.SKIPPED]: 'Skipped',
+});

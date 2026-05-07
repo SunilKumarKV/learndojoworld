@@ -1,0 +1,19 @@
+const DOUBT_STATUS = Object.freeze({
+  OPEN: 'OPEN',
+  RESOLVED: 'RESOLVED',
+  FLAGGED: 'FLAGGED',
+  HIDDEN: 'HIDDEN',
+  CLOSED: 'CLOSED',
+});
+
+const DOUBT_REPORT_STATUS = Object.freeze({
+  PENDING: 'PENDING',
+  REVIEWED: 'REVIEWED',
+  DISMISSED: 'DISMISSED',
+  ACTIONED: 'ACTIONED',
+});
+
+module.exports = {
+  DOUBT_STATUS,
+  DOUBT_REPORT_STATUS,
+};

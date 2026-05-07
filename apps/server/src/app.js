@@ -8,8 +8,11 @@ const { notFoundHandler, errorHandler } = require('./middlewares/errorHandler');
 const adminReviewRoutes = require('./modules/adminReview/adminReview.routes');
 const authRoutes = require('./modules/auth/auth.routes');
 const creatorStudioRoutes = require('./modules/creatorStudio/creatorStudio.routes');
+const doubtRoutes = require('./modules/doubts/doubt.routes');
 const healthRoutes = require('./modules/health/health.routes');
+const quizRoutes = require('./modules/quiz/quiz.routes');
 const roadmapRoutes = require('./modules/roadmaps/roadmap.routes');
+const studyTrackerRoutes = require('./modules/studyTracker/studyTracker.routes');
 const topicRoutes = require('./modules/topics/topic.routes');
 
 /**
@@ -27,8 +30,11 @@ app.use(requestLogger);
 app.use('/api/v1/admin/review', adminReviewRoutes);
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/creator-studio', creatorStudioRoutes);
+app.use('/api/v1/doubts', doubtRoutes);
 app.use('/api/v1/health', healthRoutes);
+app.use('/api/v1/quizzes', quizRoutes);
 app.use('/api/v1/roadmaps', roadmapRoutes);
+app.use('/api/v1/study-tracker', studyTrackerRoutes);
 app.use('/api/v1/topics', topicRoutes);
 
 app.use(notFoundHandler);

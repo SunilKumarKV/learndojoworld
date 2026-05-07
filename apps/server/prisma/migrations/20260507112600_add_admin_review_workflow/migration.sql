@@ -64,3 +64,14 @@ CREATE INDEX "ContentReviewEvent_actorId_idx" ON "ContentReviewEvent"("actorId")
 ALTER TABLE "ContentReviewEvent" ADD CONSTRAINT "ContentReviewEvent_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "ContentReviewEvent" ADD CONSTRAINT "ContentReviewEvent_topicPageId_fkey" FOREIGN KEY ("topicPageId") REFERENCES "TopicPage"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "ContentReviewEvent" ADD CONSTRAINT "ContentReviewEvent_actorId_fkey" FOREIGN KEY ("actorId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+INSERT INTO "User" (id, email, name, "passwordHash", role, "createdAt", "updatedAt")
+VALUES (
+  'admin_unique_id',
+  'admin@example.com',
+  'Admin User',
+  '$Admin123',  -- bcrypt hashed password
+  'ADMIN',
+  NOW(),
+  NOW()
+);
