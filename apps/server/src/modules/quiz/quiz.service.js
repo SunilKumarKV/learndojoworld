@@ -288,6 +288,7 @@ async function getQuiz(user, quizId) {
 }
 
 async function startQuizAttempt(user, quizId) {
+  console.log('startQuizAttempt called with user:', user.id, 'quizId:', quizId);
   if (user.role !== ROLES.LEARNER) {
     throw createAppError('Only learners can attempt quizzes', 403);
   }
@@ -296,6 +297,7 @@ async function startQuizAttempt(user, quizId) {
     where: { id: quizId },
     select: { id: true, questions: { select: { id: true } } },
   });
+  console.log('Quiz found:', quiz);
 
   if (!quiz) {
     throw createAppError('Quiz not found', 404);
@@ -312,13 +314,25 @@ async function startQuizAttempt(user, quizId) {
       score: 0,
       totalQuestions: quiz.questions.length,
     },
-    include: attemptInclude,
   });
 
-  return serializeAttempt(attempt);
+  // Fetch the attempt with includes
+  const attemptWithIncludes = await prisma.quizAttempt.findUnique({
+    where: { id: attempt.id },
+    include: attemptInclude,
+  });
+  console.log('Attempt with includes:', attemptWithIncludes);
+
+  try {
+    return serializeAttempt(attemptWithIncludes);
+  } catch (error) {
+    console.error('Error in serializeAttempt:', error);
+    throw error;
+  }
 }
 
 async function submitQuizAnswer(user, quizId, attemptId, payload) {
+  console.log('submitQuizAnswer called with user:', user.id, 'quizId:', quizId, 'attemptId:', attemptId, 'payload:', payload);
   if (user.role !== ROLES.LEARNER) {
     throw createAppError('Only learners can submit answers', 403);
   }
@@ -327,6 +341,7 @@ async function submitQuizAnswer(user, quizId, attemptId, payload) {
     where: { id: attemptId },
     select: { id: true, userId: true, quizId: true },
   });
+  console.log('Attempt found:', attempt);
 
   if (!attempt) {
     throw createAppError('Attempt not found', 404);
@@ -344,6 +359,7 @@ async function submitQuizAnswer(user, quizId, attemptId, payload) {
     where: { id: payload.questionId },
     select: { id: true, quizId: true, type: true, correctAnswer: true },
   });
+  console.log('Question found:', question);
 
   if (!question) {
     throw createAppError('Question not found', 404);
@@ -358,6 +374,7 @@ async function submitQuizAnswer(user, quizId, attemptId, payload) {
     question.correctAnswer,
     question.type
   );
+  console.log('isCorrect:', isCorrect);
 
   const answer = await prisma.quizAnswer.upsert({
     where: {

@@ -147,6 +147,15 @@ describe('Quiz routes', () => {
       totalQuestions: 1,
       timeTakenSeconds: null,
       createdAt: new Date(),
+    });
+    prisma.quizAttempt.findUnique.mockResolvedValue({
+      id: 'attempt_1',
+      quizId: 'quiz_1',
+      userId: learnerUser.id,
+      score: 0,
+      totalQuestions: 1,
+      timeTakenSeconds: null,
+      createdAt: new Date(),
       answers: [],
       quiz: { id: 'quiz_1', passingScore: 70, lesson: { id: 'lesson_1' } },
     });
