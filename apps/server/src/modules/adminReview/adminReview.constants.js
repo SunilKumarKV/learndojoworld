@@ -1,0 +1,24 @@
+const REVIEW_STATUS = Object.freeze({
+  DRAFT: 'DRAFT',
+  SUBMITTED: 'SUBMITTED',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+  PUBLISHED: 'PUBLISHED',
+  FLAGGED: 'FLAGGED',
+});
+
+const REVIEWABLE_CONTENT_TYPE = Object.freeze({
+  COURSE: 'COURSE',
+  TOPIC_PAGE: 'TOPIC_PAGE',
+});
+
+const CONTENT_TYPE_PARAM = Object.freeze({
+  COURSE: 'course',
+  TOPIC: 'topic',
+});
+
+module.exports = {
+  REVIEW_STATUS,
+  REVIEWABLE_CONTENT_TYPE,
+  CONTENT_TYPE_PARAM,
+};

@@ -3,16 +3,16 @@
  * @param {import('zod').AnyZodObject} schema
  * @param {'body'|'query'|'params'} property
  */
+const { createAppError } = require('../utils/appError');
+
 function validateRequest(schema, property = 'body') {
   return (req, res, next) => {
     const result = schema.safeParse(req[property]);
 
     if (!result.success) {
-      const error = new Error('Validation failed');
-      error.statusCode = 400;
-      error.isOperational = true;
-      error.details = result.error.format();
-      return next(error);
+      return next(
+        createAppError('Validation failed', 400, result.error.format())
+      );
     }
 
     req[property] = result.data;

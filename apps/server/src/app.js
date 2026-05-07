@@ -5,7 +5,12 @@ const { limiter } = require('./config/rateLimit.config');
 const corsOptions = require('./config/cors.config');
 const { requestLogger } = require('./middlewares/requestLogger');
 const { notFoundHandler, errorHandler } = require('./middlewares/errorHandler');
+const adminReviewRoutes = require('./modules/adminReview/adminReview.routes');
+const authRoutes = require('./modules/auth/auth.routes');
+const creatorStudioRoutes = require('./modules/creatorStudio/creatorStudio.routes');
 const healthRoutes = require('./modules/health/health.routes');
+const roadmapRoutes = require('./modules/roadmaps/roadmap.routes');
+const topicRoutes = require('./modules/topics/topic.routes');
 
 /**
  * Create the Express application instance with global middleware.
@@ -19,7 +24,12 @@ app.use(express.json());
 app.use(limiter);
 app.use(requestLogger);
 
+app.use('/api/v1/admin/review', adminReviewRoutes);
+app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/creator-studio', creatorStudioRoutes);
 app.use('/api/v1/health', healthRoutes);
+app.use('/api/v1/roadmaps', roadmapRoutes);
+app.use('/api/v1/topics', topicRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

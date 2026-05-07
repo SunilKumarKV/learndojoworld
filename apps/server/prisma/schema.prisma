@@ -7,9 +7,342 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  ADMIN
+  CREATOR
+  LEARNER
+}
+
+enum RoadmapStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum NodeProgressStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  NEEDS_REVISION
+}
+
+enum TopicStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  PUBLISHED
+  FLAGGED
+}
+
+enum CourseStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  PUBLISHED
+  FLAGGED
+}
+
+enum ReviewableContentType {
+  COURSE
+  TOPIC_PAGE
+}
+
+enum ContentBlockType {
+  HEADING
+  PARAGRAPH
+  EXAMPLE
+  REAL_WORLD_EXAMPLE
+  COMMON_MISTAKE
+  WARNING
+  TIP
+  CODE
+  QUIZ_REFERENCE
+  VIDEO_REFERENCE
+}
+
+enum QuizQuestionType {
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+  SHORT_ANSWER
+}
+
 model User {
+  id              String                @id @default(cuid())
+  email           String                @unique
+  name            String?
+  passwordHash    String
+  role            Role                  @default(LEARNER)
+  refreshTokens   RefreshToken[]
+  createdRoadmaps Roadmap[]             @relation("RoadmapCreator")
+  createdTopics   TopicPage[]           @relation("TopicCreator")
+  approvedTopics  TopicPage[]           @relation("TopicApprover")
+  createdCourses  Course[]              @relation("CourseCreator")
+  approvedCourses Course[]              @relation("CourseApprover")
+  reviewEvents    ContentReviewEvent[]  @relation("ReviewEventActor")
+  roadmapProgress UserRoadmapProgress[]
+  nodeProgress    UserNodeProgress[]
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Roadmap {
+  id              String                @id @default(cuid())
+  title           String
+  slug            String                @unique
+  description     String?
+  status          RoadmapStatus         @default(DRAFT)
+  createdById     String
+  createdBy       User                  @relation("RoadmapCreator", fields: [createdById], references: [id])
+  nodes           RoadmapNode[]
+  learnerProgress UserRoadmapProgress[]
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  @@index([status])
+  @@index([createdById])
+}
+
+model RoadmapNode {
+  id            String             @id @default(cuid())
+  roadmapId     String
+  roadmap       Roadmap            @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+  title         String
+  slug          String
+  summary       String?
+  content       String?
+  order         Int                @default(0)
+  topicPages    TopicPage[]
+  prerequisites RoadmapNode[]      @relation("NodePrerequisites")
+  unlocks       RoadmapNode[]      @relation("NodePrerequisites")
+  userProgress  UserNodeProgress[]
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@unique([roadmapId, slug])
+  @@index([roadmapId, order])
+}
+
+model UserRoadmapProgress {
+  id             String             @id @default(cuid())
+  userId         String
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roadmapId      String
+  roadmap        Roadmap            @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+  startedAt      DateTime           @default(now())
+  completedAt    DateTime?
+  lastAccessedAt DateTime           @default(now())
+  nodeProgress   UserNodeProgress[]
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@unique([userId, roadmapId])
+  @@index([roadmapId])
+}
+
+model UserNodeProgress {
+  id                    String              @id @default(cuid())
+  userId                String
+  user                  User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roadmapNodeId         String
+  roadmapNode           RoadmapNode         @relation(fields: [roadmapNodeId], references: [id], onDelete: Cascade)
+  userRoadmapProgressId String
+  userRoadmapProgress   UserRoadmapProgress @relation(fields: [userRoadmapProgressId], references: [id], onDelete: Cascade)
+  status                NodeProgressStatus  @default(NOT_STARTED)
+  startedAt             DateTime?
+  completedAt           DateTime?
+  needsRevisionAt       DateTime?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  @@unique([userId, roadmapNodeId])
+  @@index([userRoadmapProgressId])
+  @@index([status])
+}
+
+model TopicPage {
+  id            String               @id @default(cuid())
+  title         String
+  slug          String               @unique
+  summary       String?
+  status        TopicStatus          @default(DRAFT)
+  roadmapNodeId String?
+  roadmapNode   RoadmapNode?         @relation(fields: [roadmapNodeId], references: [id], onDelete: SetNull)
+  createdById   String
+  createdBy     User                 @relation("TopicCreator", fields: [createdById], references: [id])
+  approvedById  String?
+  approvedBy    User?                @relation("TopicApprover", fields: [approvedById], references: [id])
+  reviewNotes   String?
+  submittedAt   DateTime?
+  approvedAt    DateTime?
+  publishedAt   DateTime?
+  blocks        ContentBlock[]
+  lessons       Lesson[]
+  reviewEvents  ContentReviewEvent[]
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  @@index([status])
+  @@index([roadmapNodeId])
+  @@index([createdById])
+}
+
+model ContentBlock {
+  id          String           @id @default(cuid())
+  topicPageId String
+  topicPage   TopicPage        @relation(fields: [topicPageId], references: [id], onDelete: Cascade)
+  type        ContentBlockType
+  title       String?
+  content     String
+  language    String?
+  referenceId String?
+  order       Int              @default(0)
+  metadata    Json?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([topicPageId, order])
+  @@index([type])
+}
+
+model Course {
+  id           String               @id @default(cuid())
+  title        String
+  slug         String               @unique
+  subtitle     String?
+  description  String?
+  level        String?
+  status       CourseStatus         @default(DRAFT)
+  reviewNotes  String?
+  submittedAt  DateTime?
+  approvedAt   DateTime?
+  publishedAt  DateTime?
+  createdById  String
+  createdBy    User                 @relation("CourseCreator", fields: [createdById], references: [id])
+  approvedById String?
+  approvedBy   User?                @relation("CourseApprover", fields: [approvedById], references: [id])
+  modules      CourseModule[]
+  reviewEvents ContentReviewEvent[]
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  @@index([status])
+  @@index([createdById])
+}
+
+model CourseModule {
   id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title     String
+  slug      String
+  summary   String?
+  order     Int      @default(0)
+  lessons   Lesson[]
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([courseId, slug])
+  @@index([courseId, order])
+}
+
+model Lesson {
+  id          String               @id @default(cuid())
+  moduleId    String
+  module      CourseModule         @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  title       String
+  slug        String
+  summary     String?
+  videoUrl    String?
+  order       Int                  @default(0)
+  topicPageId String?
+  topicPage   TopicPage?           @relation(fields: [topicPageId], references: [id], onDelete: SetNull)
+  notes       LessonContentBlock[]
+  quiz        Quiz?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@unique([moduleId, slug])
+  @@index([moduleId, order])
+  @@index([topicPageId])
+}
+
+model LessonContentBlock {
+  id          String           @id @default(cuid())
+  lessonId    String
+  lesson      Lesson           @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  type        ContentBlockType
+  title       String?
+  content     String
+  language    String?
+  referenceId String?
+  order       Int              @default(0)
+  metadata    Json?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([lessonId, order])
+  @@index([type])
+}
+
+model Quiz {
+  id           String         @id @default(cuid())
+  lessonId     String         @unique
+  lesson       Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  title        String
+  instructions String?
+  questions    QuizQuestion[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+model QuizQuestion {
+  id            String           @id @default(cuid())
+  quizId        String
+  quiz          Quiz             @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  prompt        String
+  type          QuizQuestionType @default(MULTIPLE_CHOICE)
+  options       Json?
+  correctAnswer String
+  explanation   String?
+  order         Int              @default(0)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@index([quizId, order])
+}
+
+model ContentReviewEvent {
+  id          String                @id @default(cuid())
+  contentType ReviewableContentType
+  courseId    String?
+  course      Course?               @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  topicPageId String?
+  topicPage   TopicPage?            @relation(fields: [topicPageId], references: [id], onDelete: Cascade)
+  fromStatus  String?
+  toStatus    String
+  reason      String?
+  actorId     String
+  actor       User                  @relation("ReviewEventActor", fields: [actorId], references: [id])
+  metadata    Json?
+  createdAt   DateTime              @default(now())
+
+  @@index([contentType, createdAt])
+  @@index([courseId, createdAt])
+  @@index([topicPageId, createdAt])
+  @@index([actorId])
 }

@@ -1,0 +1,7 @@
+export const ROLES = Object.freeze({
+  ADMIN: 'ADMIN',
+  CREATOR: 'CREATOR',
+  LEARNER: 'LEARNER',
+});
+
+export const PUBLIC_REGISTRATION_ROLES = [ROLES.LEARNER, ROLES.CREATOR];

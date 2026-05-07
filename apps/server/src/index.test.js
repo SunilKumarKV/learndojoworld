@@ -1,4 +1,18 @@
 const request = require('supertest');
+
+jest.mock('./lib/prisma', () => ({
+  user: {
+    findUnique: jest.fn(),
+  },
+  refreshToken: {
+    create: jest.fn(),
+    findUnique: jest.fn(),
+    update: jest.fn(),
+    updateMany: jest.fn(),
+  },
+  $transaction: jest.fn(),
+}));
+
 const app = require('./app');
 
 describe('Server foundation', () => {
