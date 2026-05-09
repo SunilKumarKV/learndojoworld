@@ -17,7 +17,7 @@ import {
 const AuthContext = createContext(null);
 
 function getErrorMessage(error, fallback) {
-  return error?.response?.data?.message || fallback;
+  return error?.userMessage || error?.response?.data?.message || fallback;
 }
 
 export function AuthProvider({ children }) {

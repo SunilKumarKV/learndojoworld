@@ -55,7 +55,12 @@ function TopicRenderer({ topic }) {
             {sectionBlocks.length ? (
               <div className="mt-5 space-y-5">
                 {sectionBlocks.map((block) => (
-                  <TopicBlock key={block.id} block={block} />
+                  <TopicBlock
+                    key={block.id}
+                    block={block}
+                    topicId={topic.id}
+                    topicTitle={topic.title}
+                  />
                 ))}
               </div>
             ) : (

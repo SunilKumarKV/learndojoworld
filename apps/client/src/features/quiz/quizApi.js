@@ -1,82 +1,66 @@
-import apiClient from '../../lib/apiClient';
+import { apiClient } from '../../lib/apiClient';
 
-export async function createQuiz(accessToken, payload) {
-  const response = await apiClient.post('/api/v1/quizzes', payload, {
+function authHeader(accessToken) {
+  return {
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
-  });
+  };
+}
+
+function unwrap(response) {
   return response.data.data;
 }
 
+export async function createQuiz(accessToken, payload) {
+  const response = await apiClient.post('/quizzes', payload, authHeader(accessToken));
+  return unwrap(response);
+}
+
 export async function getQuiz(accessToken, quizId) {
-  const response = await apiClient.get(`/api/v1/quizzes/${quizId}`, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
-  return response.data.data;
+  const response = await apiClient.get(`/quizzes/${quizId}`, authHeader(accessToken));
+  return unwrap(response);
 }
 
 export async function startQuizAttempt(accessToken, quizId) {
   const response = await apiClient.post(
-    `/api/v1/quizzes/${quizId}/attempts`,
+    `/quizzes/${quizId}/attempts`,
     {},
-    {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    }
+    authHeader(accessToken)
   );
-  return response.data.data;
+  return unwrap(response);
 }
 
 export async function submitAnswer(accessToken, quizId, attemptId, answer) {
   const response = await apiClient.post(
-    `/api/v1/quizzes/${quizId}/attempts/${attemptId}/answers`,
+    `/quizzes/${quizId}/attempts/${attemptId}/answers`,
     answer,
-    {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    }
+    authHeader(accessToken)
   );
-  return response.data.data;
+  return unwrap(response);
 }
 
 export async function submitQuizAttempt(accessToken, quizId, attemptId) {
   const response = await apiClient.post(
-    `/api/v1/quizzes/${quizId}/attempts/${attemptId}/submit`,
+    `/quizzes/${quizId}/attempts/${attemptId}/submit`,
     {},
-    {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    }
+    authHeader(accessToken)
   );
-  return response.data.data;
+  return unwrap(response);
 }
 
 export async function getAttemptResult(accessToken, quizId, attemptId) {
   const response = await apiClient.get(
-    `/api/v1/quizzes/${quizId}/attempts/${attemptId}`,
-    {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    }
+    `/quizzes/${quizId}/attempts/${attemptId}`,
+    authHeader(accessToken)
   );
-  return response.data.data;
+  return unwrap(response);
 }
 
 export async function getMyAttempts(accessToken, quizId) {
   const response = await apiClient.get(
-    `/api/v1/quizzes/${quizId}/my-attempts`,
-    {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    }
+    `/quizzes/${quizId}/my-attempts`,
+    authHeader(accessToken)
   );
-  return response.data.data;
+  return unwrap(response);
 }

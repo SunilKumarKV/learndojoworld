@@ -23,6 +23,9 @@ jest.mock('../../lib/prisma', () => ({
     findMany: jest.fn(),
     update: jest.fn(),
   },
+  flashcard: {
+    findMany: jest.fn(),
+  },
   learnerStats: {
     create: jest.fn(),
     findUnique: jest.fn(),
@@ -208,6 +211,7 @@ describe('StudyTracker routes', () => {
       ]);
     prisma.studySession.findFirst.mockResolvedValue(null);
     prisma.studySession.aggregate.mockResolvedValue(aggregateMinutes(40));
+    prisma.flashcard.findMany.mockResolvedValue([]);
     prisma.learnerStats.findUnique.mockResolvedValue(null);
     prisma.learnerStats.create.mockResolvedValue({
       id: 'stats_1',

@@ -66,12 +66,31 @@ ALTER TABLE "ContentReviewEvent" ADD CONSTRAINT "ContentReviewEvent_topicPageId_
 ALTER TABLE "ContentReviewEvent" ADD CONSTRAINT "ContentReviewEvent_actorId_fkey" FOREIGN KEY ("actorId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 INSERT INTO "User" (id, email, name, "passwordHash", role, "createdAt", "updatedAt")
-VALUES (
-  'admin_unique_id',
-  'admin@example.com',
-  'Admin User',
-  '$Admin123',  -- bcrypt hashed password
-  'ADMIN',
-  NOW(),
-  NOW()
-);
+VALUES
+  (
+    'admin_unique_id',
+    'admin@example.com',
+    'Admin User',
+    '$2b$12$21cQfQ393aFZKwoBbARNnuvu3puZuu/Qzh2lV5H4FOkDQYFBJoKIq',
+    'ADMIN',
+    NOW(),
+    NOW()
+  ),
+  (
+    'creator_unique_id',
+    'creator@example.com',
+    'Creator User',
+    '$2b$12$YTipc7MgVf8UuQ.XosWKAeHt8JgcOmAFCHwS1Inq5.J5T912/k8yO',
+    'CREATOR',
+    NOW(),
+    NOW()
+  ),
+  (
+    'learner_unique_id',
+    'learner@example.com',
+    'Learner User',
+    '$2b$12$8j.7.It8q.nc0MY5yRdSWOdQKcMH4Iutr4FS505NYYTef.rM13NKy',
+    'LEARNER',
+    NOW(),
+    NOW()
+  );

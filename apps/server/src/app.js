@@ -14,6 +14,7 @@ const quizRoutes = require('./modules/quiz/quiz.routes');
 const roadmapRoutes = require('./modules/roadmaps/roadmap.routes');
 const studyTrackerRoutes = require('./modules/studyTracker/studyTracker.routes');
 const topicRoutes = require('./modules/topics/topic.routes');
+const flashcardRoutes = require('./modules/flashcards/flashcards.routes');
 
 /**
  * Create the Express application instance with global middleware.
@@ -36,6 +37,7 @@ app.use('/api/v1/quizzes', quizRoutes);
 app.use('/api/v1/roadmaps', roadmapRoutes);
 app.use('/api/v1/study-tracker', studyTrackerRoutes);
 app.use('/api/v1/topics', topicRoutes);
+app.use('/api/v1/flashcards', flashcardRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

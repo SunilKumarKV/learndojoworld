@@ -6,3 +6,12 @@ dist
 .env.local
 .env.production
 *.log
+# OS/editor junk
+.DS_Store
+__MACOSX/
+.vscode/
+.idea/
+
+# Local build/cache output
+coverage/
+apps/*/dist/

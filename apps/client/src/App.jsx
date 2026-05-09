@@ -2,7 +2,10 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import RoleBasedRoute from './components/auth/RoleBasedRoute';
 import { ROLES } from './constants/roles';
+import PageTransition from './components/ux/PageTransition';
+import OnboardingModal from './components/ux/OnboardingModal';
 import { AuthProvider } from './features/auth/AuthContext';
+import { PreferencesProvider } from './features/preferences/PreferencesContext';
 import AdminContentPreview from './pages/AdminContentPreview';
 import AdminCreatorManagement from './pages/AdminCreatorManagement';
 import AdminReviewQueue from './pages/AdminReviewQueue';
@@ -22,11 +25,17 @@ import TopicDetail from './pages/TopicDetail';
 import TopicBlockEditor from './pages/TopicBlockEditor';
 import TopicsList from './pages/TopicsList';
 import Unauthorized from './pages/Unauthorized';
+import FlashcardReview from './pages/FlashcardReview';
+import LearningRoom from './pages/LearningRoom';
+import ProfileDashboard from './pages/ProfileDashboard';
 
 function App() {
   return (
-    <AuthProvider>
-      <Routes>
+    <PreferencesProvider>
+      <AuthProvider>
+        <OnboardingModal />
+        <PageTransition>
+          <Routes>
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/roadmaps" element={<RoadmapsList />} />
@@ -38,6 +47,9 @@ function App() {
           <Route path="/my-progress" element={<MyLearningProgress />} />
           <Route path="/topics" element={<TopicsList />} />
           <Route path="/topics/:topicId" element={<TopicDetail />} />
+          <Route path="/flashcards/review" element={<FlashcardReview />} />
+          <Route path="/learn" element={<LearningRoom />} />
+          <Route path="/profile" element={<ProfileDashboard />} />
           <Route
             element={
               <RoleBasedRoute allowedRoles={[ROLES.ADMIN, ROLES.CREATOR]} />
@@ -76,8 +88,10 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
         <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </AuthProvider>
+          </Routes>
+        </PageTransition>
+      </AuthProvider>
+    </PreferencesProvider>
   );
 }
 

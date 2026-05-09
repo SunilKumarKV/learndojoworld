@@ -12,7 +12,7 @@ function AuthLayout({ children, footer, title }) {
             </Link>
             <div>
               <p className="text-sm font-semibold uppercase tracking-normal text-emerald-300">
-                LearnDojo
+                LearnDojoWorld
               </p>
               <h1 className="mt-4 text-4xl font-bold leading-tight tracking-normal">
                 LearnDojoWorld

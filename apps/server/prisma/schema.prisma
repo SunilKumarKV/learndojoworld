@@ -83,6 +83,13 @@ enum ReviewableContentType {
   TOPIC_PAGE
 }
 
+enum FlashcardReviewGrade {
+  EASY
+  GOOD
+  HARD
+  FORGOT
+}
+
 enum ContentBlockType {
   HEADING
   PARAGRAPH
@@ -121,7 +128,12 @@ model User {
   studyPlans      StudyPlan[]
   studySessions   StudySession[]
   revisionItems   RevisionItem[]
+  flashcards      Flashcard[]
+  flashcardReviews FlashcardReview[]
   learnerStats    LearnerStats?
+  profile         UserProfile?
+  following       UserFollow[]          @relation("UserFollowing")
+  followers       UserFollow[]          @relation("UserFollowers")
   doubts          Doubt[]               @relation("DoubtAuthor")
   doubtReplies    DoubtReply[]          @relation("DoubtReplyAuthor")
   officialReplies DoubtReply[]          @relation("OfficialDoubtReplyMarker")
@@ -130,6 +142,34 @@ model User {
   reviewedReports DoubtReport[]         @relation("DoubtReportReviewer")
   createdAt       DateTime              @default(now())
   updatedAt       DateTime              @updatedAt
+}
+
+
+model UserProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  headline  String?
+  bio       String?
+  location  String?
+  website   String?
+  avatarUrl String?
+  skills    String[] @default([])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model UserFollow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  follower    User     @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([followerId, followingId])
+  @@index([followingId])
+  @@index([followerId])
 }
 
 model RefreshToken {
@@ -174,6 +214,7 @@ model RoadmapNode {
   content       String?
   order         Int                @default(0)
   topicPages    TopicPage[]
+  flashcards    Flashcard[]
   prerequisites RoadmapNode[]      @relation("NodePrerequisites")
   unlocks       RoadmapNode[]      @relation("NodePrerequisites")
   userProgress  UserNodeProgress[]
@@ -246,6 +287,7 @@ model TopicPage {
   quizzes       TopicPageQuiz[]
   studySessions StudySession[]
   revisionItems RevisionItem[]
+  flashcards    Flashcard[]
   doubts        Doubt[]
   reviewEvents  ContentReviewEvent[]
   createdAt     DateTime             @default(now())
@@ -254,6 +296,44 @@ model TopicPage {
   @@index([status])
   @@index([roadmapNodeId])
   @@index([createdById])
+}
+
+model Flashcard {
+  id               String               @id @default(cuid())
+  userId           String
+  user             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topicPageId      String?
+  topicPage        TopicPage?           @relation(fields: [topicPageId], references: [id], onDelete: Cascade)
+  roadmapNodeId    String?
+  roadmapNode      RoadmapNode?         @relation(fields: [roadmapNodeId], references: [id], onDelete: Cascade)
+  frontText        String
+  backText         String
+  reviewCount      Int                  @default(0)
+  reviewValueTotal Int                  @default(0)
+  intervalDays     Int                  @default(1)
+  nextReviewAt     DateTime
+  masteryScore     Int                  @default(0)
+  reviews          FlashcardReview[]
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  @@index([userId])
+  @@index([nextReviewAt])
+  @@index([topicPageId])
+}
+
+model FlashcardReview {
+  id           String               @id @default(cuid())
+  flashcardId  String
+  flashcard    Flashcard            @relation(fields: [flashcardId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  grade        FlashcardReviewGrade
+  intervalDays Int
+  nextReviewAt DateTime
+  createdAt    DateTime             @default(now())
+
+  @@index([flashcardId])
 }
 
 model ContentBlock {

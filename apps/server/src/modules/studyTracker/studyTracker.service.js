@@ -10,6 +10,7 @@ const {
   STUDY_PLAN_STATUS,
   STUDY_SESSION_STATUS,
 } = require('./studyTracker.constants');
+const { getFlashcardsDue } = require('../flashcards/flashcards.service');
 
 const roadmapSummarySelect = {
   id: true,
@@ -554,50 +555,126 @@ async function syncLearnerStats(user, referenceDate = new Date()) {
   });
 }
 
+
+async function safeDashboardSection(label, fallbackValue, loader) {
+  try {
+    return await loader();
+  } catch (error) {
+    console.error(`[StudyTracker dashboard] ${label} failed`, {
+      message: error?.message,
+      code: error?.code,
+    });
+    return fallbackValue;
+  }
+}
+
+function calculateXpLevel(totalStudyMinutes = 0, completedNodeCount = 0) {
+  const xp = totalStudyMinutes * 2 + completedNodeCount * 75;
+  const level = Math.max(1, Math.floor(xp / 500) + 1);
+  const currentLevelXp = (level - 1) * 500;
+  const nextLevelXp = level * 500;
+  const progressToNextLevel = Math.round(
+    ((xp - currentLevelXp) / Math.max(1, nextLevelXp - currentLevelXp)) * 100
+  );
+
+  return { xp, level, progressToNextLevel, nextLevelXp };
+}
+
+async function getCompletedNodeTotal(userId) {
+  return prisma.userNodeProgress.count({
+    where: {
+      userId,
+      status: NODE_PROGRESS_STATUS.COMPLETED,
+    },
+  });
+}
+
 async function getStudyDashboard(user, query = {}) {
   const todayRange = getDateRange(query.date);
   const weekRange = getWeekRange(todayRange.start);
-  let todaysPlan = await listTodayPlans(user.id, todayRange);
+
+  let todaysPlan = await safeDashboardSection('today plan', [], () =>
+    listTodayPlans(user.id, todayRange)
+  );
 
   if (!todaysPlan.length && isToday(todayRange.start)) {
-    await createDerivedDailyPlans(user, todayRange.start);
-    todaysPlan = await listTodayPlans(user.id, todayRange);
+    await safeDashboardSection('derived daily plans', null, () =>
+      createDerivedDailyPlans(user, todayRange.start)
+    );
+    todaysPlan = await safeDashboardSection('today plan reload', [], () =>
+      listTodayPlans(user.id, todayRange)
+    );
   }
 
   const [
     continueLearning,
     revisionDue,
+    flashcardsDue,
     weakTopics,
     weeklyProgress,
     activeSession,
     studyTime,
     stats,
+    completedNodeTotal,
   ] = await Promise.all([
-    getContinueLearning(user),
-    getRevisionDue(user, todayRange),
-    getWeakTopics(user),
-    getWeeklyProgressSummary(user, todayRange.start),
-    getActiveSession(user),
-    getStudyTimeSummary(user, todayRange, weekRange),
-    syncLearnerStats(user, todayRange.start),
+    safeDashboardSection('continue learning', [], () => getContinueLearning(user)),
+    safeDashboardSection('revision due', [], () => getRevisionDue(user, todayRange)),
+    safeDashboardSection('flashcards due', [], () => getFlashcardsDue(user, todayRange)),
+    safeDashboardSection('weak topics', [], () => getWeakTopics(user)),
+    safeDashboardSection('weekly progress', [], () =>
+      getWeeklyProgressSummary(user, todayRange.start)
+    ),
+    safeDashboardSection('active session', null, () => getActiveSession(user)),
+    safeDashboardSection('study time', {
+      todayMinutes: 0,
+      weekMinutes: 0,
+      totalMinutes: 0,
+    }, () => getStudyTimeSummary(user, todayRange, weekRange)),
+    safeDashboardSection('learner stats', {
+      currentStreak: 0,
+      longestStreak: 0,
+      lastStudiedAt: null,
+    }, () => syncLearnerStats(user, todayRange.start)),
+    safeDashboardSection('completed node total', 0, () => getCompletedNodeTotal(user.id)),
   ]);
 
+  const xpLevel = calculateXpLevel(
+    studyTime.totalMinutes || 0,
+    completedNodeTotal || 0
+  );
+
   return {
+    profile: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    },
     today: {
       date: formatDateKey(todayRange.start),
       plan: todaysPlan,
     },
     continueLearning,
     revisionDue,
+    flashcardsDue,
     weakTopics,
     weeklyProgress,
     activeSession,
     streak: {
-      current: stats.currentStreak,
-      longest: stats.longestStreak,
-      lastStudiedAt: stats.lastStudiedAt,
+      current: stats.currentStreak || 0,
+      longest: stats.longestStreak || 0,
+      lastStudiedAt: stats.lastStudiedAt || null,
     },
     studyTime,
+    xpLevel,
+    hasRealLearningData: Boolean(
+      todaysPlan.length ||
+        continueLearning.length ||
+        revisionDue.length ||
+        flashcardsDue.length ||
+        weakTopics.length ||
+        weeklyProgress.some((item) => item.studyMinutes || item.completedNodes)
+    ),
   };
 }
 

@@ -76,6 +76,15 @@ const dashboard = {
       status: 'DUE',
     },
   ],
+  flashcardsDue: [
+    {
+      id: 'flashcard_1',
+      frontText: 'What is a heading tag?',
+      backText: '<h1>Heading</h1>',
+      masteryScore: 60,
+      nextReviewAt: '2026-05-07T09:00:00.000Z',
+    },
+  ],
   weakTopics: [
     {
       id: 'node_progress_1',
@@ -149,6 +158,8 @@ describe('StudyTrackerDashboard', () => {
       0
     );
     expect(screen.getByText('Review HTML tags')).toBeInTheDocument();
+    expect(screen.getByText('Flashcards due')).toBeInTheDocument();
+    expect(screen.getByText('What is a heading tag?')).toBeInTheDocument();
     expect(screen.getByText('Weak topics')).toBeInTheDocument();
     expect(screen.getByText('Weekly progress')).toBeInTheDocument();
     expect(screen.getByText('4 days')).toBeInTheDocument();
