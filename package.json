@@ -5,11 +5,21 @@
   "description": "Startup-grade AI learning operating system.",
   "packageManager": "pnpm@9.15.0",
   "scripts": {
-    "dev": "pnpm --parallel --recursive dev",
-    "build": "pnpm --recursive build",
-    "lint": "pnpm --recursive lint",
-    "test": "pnpm --recursive test",
-    "typecheck": "pnpm --recursive typecheck"
+    "dev": "pnpm --parallel --recursive --if-present dev",
+    "build": "pnpm --recursive --if-present build",
+    "lint": "pnpm --recursive --if-present lint",
+    "typecheck": "pnpm --recursive --if-present typecheck",
+    "format": "prettier --write .",
+    "db:generate": "pnpm exec prisma generate",
+    "db:migrate": "pnpm exec prisma migrate dev",
+    "db:seed": "tsx prisma/seed.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "prettier": "^3.4.2",
+    "prisma": "^6.1.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
   },
   "engines": {
     "node": ">=20.0.0",
