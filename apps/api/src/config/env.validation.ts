@@ -1,0 +1,58 @@
+export type EnvironmentVariables = {
+  API_PORT: number;
+  DATABASE_URL: string;
+  JWT_REFRESH_SECRET: string;
+  JWT_SECRET: string;
+  NODE_ENV: string;
+  REDIS_URL: string;
+  WEB_ORIGIN: string;
+};
+
+const DEFAULTS = {
+  API_PORT: 4000,
+  NODE_ENV: "development",
+  WEB_ORIGIN: "http://localhost:3000",
+} as const;
+
+const REQUIRED_KEYS = [
+  "DATABASE_URL",
+  "REDIS_URL",
+  "JWT_SECRET",
+  "JWT_REFRESH_SECRET",
+] as const;
+
+export function validateEnvironment(
+  config: Record<string, unknown>,
+): EnvironmentVariables {
+  const missingKeys = REQUIRED_KEYS.filter((key) => !readString(config[key]));
+
+  if (missingKeys.length > 0) {
+    throw new Error(
+      `Missing required environment variables: ${missingKeys.join(", ")}`,
+    );
+  }
+
+  return {
+    API_PORT: readPort(config.API_PORT) ?? DEFAULTS.API_PORT,
+    DATABASE_URL: readString(config.DATABASE_URL),
+    JWT_REFRESH_SECRET: readString(config.JWT_REFRESH_SECRET),
+    JWT_SECRET: readString(config.JWT_SECRET),
+    NODE_ENV: readString(config.NODE_ENV) || DEFAULTS.NODE_ENV,
+    REDIS_URL: readString(config.REDIS_URL),
+    WEB_ORIGIN: readString(config.WEB_ORIGIN) || DEFAULTS.WEB_ORIGIN,
+  };
+}
+
+function readString(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function readPort(value: unknown) {
+  const port = Number(value);
+
+  if (!Number.isInteger(port) || port <= 0 || port > 65_535) {
+    return undefined;
+  }
+
+  return port;
+}
