@@ -4,8 +4,9 @@
 
 - Node.js 20 or newer
 - PNPM 9 or newer
-- PostgreSQL
-- Redis
+- Docker Desktop or another Docker Compose-compatible runtime
+- PostgreSQL 16
+- Redis 7
 
 ## Install
 
@@ -21,7 +22,27 @@ Create a local environment file:
 cp .env.example .env
 ```
 
-Update `DATABASE_URL` and `REDIS_URL` when local services are available.
+The default values in `.env.example` match the local Docker services.
+
+## Local Infrastructure
+
+Start PostgreSQL and Redis:
+
+```bash
+docker compose up -d
+```
+
+Check service health:
+
+```bash
+docker compose ps
+```
+
+Stop local infrastructure:
+
+```bash
+docker compose down
+```
 
 ## Verify
 
@@ -33,10 +54,22 @@ pnpm lint
 
 ## Database
 
-These commands are wired at the repository root and will become active when the Prisma schema is introduced:
+Generate Prisma Client after installing dependencies or changing the Prisma schema:
 
 ```bash
 pnpm db:generate
-pnpm db:migrate
+```
+
+Create and apply the first local migration:
+
+```bash
+pnpm db:migrate -- --name init_foundation
+```
+
+Run the seed entrypoint:
+
+```bash
 pnpm db:seed
 ```
+
+The current seed intentionally does not create product data. It only verifies that the Prisma seed entrypoint is ready.
