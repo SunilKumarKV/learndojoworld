@@ -1,4 +1,11 @@
-import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus } from "@nestjs/common";
+import {
+  ArgumentsHost,
+  Catch,
+  ExceptionFilter,
+  HttpException,
+  HttpStatus,
+  Logger,
+} from "@nestjs/common";
 import type { Request, Response } from "express";
 
 import type { ApiErrorResponse } from "../types/api-response.type";
@@ -11,6 +18,8 @@ type NestExceptionPayload = {
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger(HttpExceptionFilter.name);
+
   catch(exception: unknown, host: ArgumentsHost) {
     const context = host.switchToHttp();
     const response = context.getResponse<Response>();
@@ -19,6 +28,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
       exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
     const payload = exception instanceof HttpException ? exception.getResponse() : undefined;
     const normalized = this.normalizePayload(payload);
+
+    if (!(exception instanceof HttpException)) {
+      this.logger.error(exception);
+    }
 
     const body: ApiErrorResponse = {
       success: false,

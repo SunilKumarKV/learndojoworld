@@ -20,19 +20,25 @@ enum Difficulty {
 }
 
 model User {
-  id             String          @id @default(uuid()) @db.Uuid
-  email          String          @unique
-  name           String?
-  role           UserRole        @default(LEARNER)
-  isActive       Boolean         @default(true)
-  profile        Profile?
-  creatorProfile CreatorProfile?
-  auditLogs      AuditLog[]      @relation("AuditActor")
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  id               String          @id @default(uuid()) @db.Uuid
+  email            String          @unique
+  username         String          @unique
+  name             String?
+  passwordHash     String
+  refreshTokenHash String?
+  role             UserRole        @default(LEARNER)
+  isActive         Boolean         @default(true)
+  isSuspended      Boolean         @default(false)
+  lastLoginAt      DateTime?
+  profile          Profile?
+  creatorProfile   CreatorProfile?
+  auditLogs        AuditLog[]      @relation("AuditActor")
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 
   @@index([role])
   @@index([isActive])
+  @@index([isSuspended])
   @@index([createdAt])
 }
 

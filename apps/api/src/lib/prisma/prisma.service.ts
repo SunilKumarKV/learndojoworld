@@ -1,21 +1,33 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
-
-import type { EnvironmentVariables } from "../../config/env.validation";
+import { PrismaClient } from "@prisma/client";
 
 @Injectable()
-export class PrismaService implements OnModuleInit, OnModuleDestroy {
+export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   readonly databaseUrl: string;
 
-  constructor(private readonly configService: ConfigService<EnvironmentVariables, true>) {
-    this.databaseUrl = this.configService.get("DATABASE_URL", { infer: true });
+  constructor() {
+    const databaseUrl = process.env.DATABASE_URL;
+
+    if (!databaseUrl) {
+      throw new Error("DATABASE_URL is missing");
+    }
+
+    super({
+      datasources: {
+        db: {
+          url: databaseUrl,
+        },
+      },
+    });
+
+    this.databaseUrl = databaseUrl;
   }
 
   async onModuleInit() {
-    // PrismaClient will be connected here after the schema is introduced.
+    await this.$connect();
   }
 
   async onModuleDestroy() {
-    // PrismaClient will be disconnected here after the schema is introduced.
+    await this.$disconnect();
   }
 }
