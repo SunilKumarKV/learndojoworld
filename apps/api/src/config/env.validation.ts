@@ -14,22 +14,13 @@ const DEFAULTS = {
   WEB_ORIGIN: "http://localhost:3000",
 } as const;
 
-const REQUIRED_KEYS = [
-  "DATABASE_URL",
-  "REDIS_URL",
-  "JWT_SECRET",
-  "JWT_REFRESH_SECRET",
-] as const;
+const REQUIRED_KEYS = ["DATABASE_URL", "REDIS_URL", "JWT_SECRET", "JWT_REFRESH_SECRET"] as const;
 
-export function validateEnvironment(
-  config: Record<string, unknown>,
-): EnvironmentVariables {
+export function validateEnvironment(config: Record<string, unknown>): EnvironmentVariables {
   const missingKeys = REQUIRED_KEYS.filter((key) => !readString(config[key]));
 
   if (missingKeys.length > 0) {
-    throw new Error(
-      `Missing required environment variables: ${missingKeys.join(", ")}`,
-    );
+    throw new Error(`Missing required environment variables: ${missingKeys.join(", ")}`);
   }
 
   return {

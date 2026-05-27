@@ -7,9 +7,11 @@
   "scripts": {
     "dev": "pnpm --parallel --recursive --if-present dev",
     "build": "pnpm --recursive --if-present build",
-    "lint": "pnpm --recursive --if-present lint",
+    "lint": "eslint .",
     "typecheck": "pnpm --recursive --if-present typecheck",
     "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepare": "husky",
     "db:generate": "pnpm exec prisma generate",
     "db:migrate": "pnpm exec prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts"
@@ -18,14 +20,30 @@
     "@prisma/client": "6.19.3"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^22.10.2",
+    "eslint": "^10.4.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.6.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.5",
     "prettier": "^3.4.2",
     "prisma": "^6.19.3",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.60.0"
   },
   "engines": {
     "node": ">=20.0.0",
     "pnpm": ">=9.0.0"
+  },
+  "lint-staged": {
+    "*.{js,mjs,cjs,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,jsonc,md,css,yml,yaml,prisma}": [
+      "prettier --write"
+    ]
   }
 }

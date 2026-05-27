@@ -7,9 +7,7 @@ import type { EnvironmentVariables } from "../../config/env.validation";
 export class PrismaService implements OnModuleInit, OnModuleDestroy {
   readonly databaseUrl: string;
 
-  constructor(
-    private readonly configService: ConfigService<EnvironmentVariables, true>,
-  ) {
+  constructor(private readonly configService: ConfigService<EnvironmentVariables, true>) {
     this.databaseUrl = this.configService.get("DATABASE_URL", { infer: true });
   }
 

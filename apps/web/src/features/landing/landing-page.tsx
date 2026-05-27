@@ -2,14 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
-import {
-  ArrowRight,
-  BrainCircuit,
-  CheckCircle2,
-  Compass,
-  Layers3,
-  Sparkles,
-} from "lucide-react";
+import { ArrowRight, BrainCircuit, CheckCircle2, Compass, Layers3, Sparkles } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -48,12 +41,7 @@ const valuePillars = [
   },
 ];
 
-const courseTracks = [
-  "AI foundations",
-  "Product thinking",
-  "English fluency",
-  "Career readiness",
-];
+const courseTracks = ["AI foundations", "Product thinking", "English fluency", "Career readiness"];
 
 export function LandingPage() {
   return (
@@ -80,10 +68,7 @@ function SiteHeader() {
         >
           LearnDojoWorld
         </a>
-        <nav
-          className="hidden items-center gap-6 md:flex"
-          aria-label="Primary navigation"
-        >
+        <nav className="hidden items-center gap-6 md:flex" aria-label="Primary navigation">
           {SITE_CONFIG.links.map((item) => (
             <a
               key={item.href}
@@ -121,9 +106,8 @@ function HeroSection() {
             LearnDojoWorld
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
-            A startup-grade AI learning operating system for focused learners,
-            memory-aware practice, and course discovery that can grow into a
-            global education platform.
+            A startup-grade AI learning operating system for focused learners, memory-aware
+            practice, and course discovery that can grow into a global education platform.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Button asChild size="lg">
@@ -157,12 +141,8 @@ function LearningConsole() {
       <CardHeader>
         <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="text-sm font-semibold text-primary">
-              Learner cockpit
-            </p>
-            <h2 className="mt-2 text-2xl font-bold text-foreground">
-              Today&apos;s learning loop
-            </h2>
+            <p className="text-sm font-semibold text-primary">Learner cockpit</p>
+            <h2 className="mt-2 text-2xl font-bold text-foreground">Today&apos;s learning loop</h2>
           </div>
           <div className="rounded-md bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700">
             Ready
@@ -170,29 +150,22 @@ function LearningConsole() {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {[
-          "Recall weak concepts",
-          "Resume active path",
-          "Discover next course",
-        ].map((item, index) => (
-          <div
-            key={item}
-            className="flex items-center justify-between rounded-lg border bg-background px-4 py-3"
-          >
-            <div className="flex items-center gap-3">
-              <span className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-sm font-bold text-primary">
-                {index + 1}
-              </span>
-              <span className="text-sm font-semibold text-foreground">
-                {item}
-              </span>
+        {["Recall weak concepts", "Resume active path", "Discover next course"].map(
+          (item, index) => (
+            <div
+              key={item}
+              className="flex items-center justify-between rounded-lg border bg-background px-4 py-3"
+            >
+              <div className="flex items-center gap-3">
+                <span className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-sm font-bold text-primary">
+                  {index + 1}
+                </span>
+                <span className="text-sm font-semibold text-foreground">{item}</span>
+              </div>
+              <CheckCircle2 className="h-5 w-5 text-emerald-600" aria-hidden="true" />
             </div>
-            <CheckCircle2
-              className="h-5 w-5 text-emerald-600"
-              aria-hidden="true"
-            />
-          </div>
-        ))}
+          ),
+        )}
       </CardContent>
     </Card>
   );
@@ -211,10 +184,7 @@ function AiLearningValue() {
           {valuePillars.map((pillar) => (
             <Card key={pillar.title} className="bg-card/92 shadow-none">
               <CardHeader>
-                <pillar.icon
-                  className="h-6 w-6 text-primary"
-                  aria-hidden="true"
-                />
+                <pillar.icon className="h-6 w-6 text-primary" aria-hidden="true" />
                 <h3 className="text-xl font-bold">{pillar.title}</h3>
               </CardHeader>
               <CardContent>
@@ -241,11 +211,7 @@ function MemoryEnginePreview() {
         />
         <Card className="bg-white/88">
           <CardHeader>
-            <div
-              className="flex flex-wrap gap-2"
-              role="tablist"
-              aria-label="Learner mode"
-            >
+            <div className="flex flex-wrap gap-2" role="tablist" aria-label="Learner mode">
               {LEARNER_MODES.map((item) => (
                 <button
                   key={item}
@@ -266,19 +232,10 @@ function MemoryEnginePreview() {
           <CardContent>
             <div className="grid gap-4 sm:grid-cols-3">
               {["Focus", "Recall", "Momentum"].map((label, index) => (
-                <div
-                  key={label}
-                  className="rounded-lg border bg-background p-4"
-                >
-                  <p className="text-sm font-medium text-muted-foreground">
-                    {label}
-                  </p>
-                  <p className="mt-3 text-3xl font-bold text-foreground">
-                    {72 + index * 8}%
-                  </p>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    {mode} mode baseline
-                  </p>
+                <div key={label} className="rounded-lg border bg-background p-4">
+                  <p className="text-sm font-medium text-muted-foreground">{label}</p>
+                  <p className="mt-3 text-3xl font-bold text-foreground">{72 + index * 8}%</p>
+                  <p className="mt-2 text-sm text-muted-foreground">{mode} mode baseline</p>
                 </div>
               ))}
             </div>
@@ -301,15 +258,11 @@ function CourseDiscoveryPreview() {
         />
         <div className="mt-10 grid gap-4 md:grid-cols-4">
           {courseTracks.map((track) => (
-            <div
-              key={track}
-              className="rounded-lg border border-white/14 bg-white/8 p-5"
-            >
+            <div key={track} className="rounded-lg border border-white/14 bg-white/8 p-5">
               <p className="text-sm font-semibold text-cyan-200">Track</p>
               <h3 className="mt-3 text-lg font-bold">{track}</h3>
               <p className="mt-4 text-sm leading-6 text-slate-300">
-                Structured for learner goals, practice loops, and future AI
-                recommendations.
+                Structured for learner goals, practice loops, and future AI recommendations.
               </p>
             </div>
           ))}
@@ -349,7 +302,7 @@ function CreatorCta() {
             </p>
           </CardHeader>
           <CardContent>
-            <form className="space-y-3" onSubmit={handleSubmit(onSubmit)}>
+            <form className="space-y-3" onSubmit={(event) => void handleSubmit(onSubmit)(event)}>
               <label className="sr-only" htmlFor="creator-email">
                 Email
               </label>
@@ -364,14 +317,10 @@ function CreatorCta() {
                 <Button type="submit">Register interest</Button>
               </div>
               {errors.email ? (
-                <p className="text-sm font-medium text-accent">
-                  {errors.email.message}
-                </p>
+                <p className="text-sm font-medium text-accent">{errors.email.message}</p>
               ) : null}
               {isSubmitSuccessful ? (
-                <p className="text-sm font-medium text-primary">
-                  Interest captured locally.
-                </p>
+                <p className="text-sm font-medium text-primary">Interest captured locally.</p>
               ) : null}
             </form>
           </CardContent>
@@ -405,12 +354,7 @@ function SectionIntro({
 }>) {
   return (
     <div className="max-w-2xl">
-      <p
-        className={cn(
-          "text-sm font-bold uppercase",
-          inverted ? "text-cyan-200" : "text-primary",
-        )}
-      >
+      <p className={cn("text-sm font-bold uppercase", inverted ? "text-cyan-200" : "text-primary")}>
         {eyebrow}
       </p>
       <h2

@@ -1,10 +1,4 @@
-import {
-  ArgumentsHost,
-  Catch,
-  ExceptionFilter,
-  HttpException,
-  HttpStatus,
-} from "@nestjs/common";
+import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus } from "@nestjs/common";
 import type { Request, Response } from "express";
 
 import type { ApiErrorResponse } from "../types/api-response.type";
@@ -22,11 +16,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const response = context.getResponse<Response>();
     const request = context.getRequest<Request>();
     const status =
-      exception instanceof HttpException
-        ? exception.getStatus()
-        : HttpStatus.INTERNAL_SERVER_ERROR;
-    const payload =
-      exception instanceof HttpException ? exception.getResponse() : undefined;
+      exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
+    const payload = exception instanceof HttpException ? exception.getResponse() : undefined;
     const normalized = this.normalizePayload(payload);
 
     const body: ApiErrorResponse = {
@@ -50,7 +41,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     }
 
     if (payload && typeof payload === "object") {
-      return payload as NestExceptionPayload;
+      return payload;
     }
 
     return {};

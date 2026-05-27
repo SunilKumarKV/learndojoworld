@@ -16,9 +16,7 @@ export const metadata: Metadata = {
   description: SITE_CONFIG.description,
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{ children: ReactNode }>) {
+export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="en">
       <body className={`${inter.variable} font-sans antialiased`}>

@@ -6,9 +6,5 @@ import type { ReactNode } from "react";
 import { getQueryClient } from "@/services/query-client";
 
 export function AppProviders({ children }: Readonly<{ children: ReactNode }>) {
-  return (
-    <QueryClientProvider client={getQueryClient()}>
-      {children}
-    </QueryClientProvider>
-  );
+  return <QueryClientProvider client={getQueryClient()}>{children}</QueryClientProvider>;
 }
