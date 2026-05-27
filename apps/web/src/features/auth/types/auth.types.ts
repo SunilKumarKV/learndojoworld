@@ -1,6 +1,7 @@
 export type AuthUser = {
   id: string;
   fullName?: string | null;
+  name?: string | null;
   username?: string | null;
   email: string;
   emailVerified?: boolean;
@@ -44,3 +45,5 @@ export type ResetPasswordPayload = {
 export type VerifyEmailPayload = {
   token: string;
 };
+
+export type AuthStateStatus = "idle" | "loading" | "authenticated" | "unauthenticated";
