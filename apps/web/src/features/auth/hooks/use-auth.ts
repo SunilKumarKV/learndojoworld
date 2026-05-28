@@ -11,6 +11,7 @@ import {
   persistAuthTokens,
   register,
 } from "@/services/auth.api";
+import { getStoredOnboardingProfile } from "@/services/onboarding.api";
 
 export function useAuth() {
   const router = useRouter();
@@ -61,7 +62,7 @@ export function useAuth() {
   const signIn = useCallback(
     async (payload: { identifier: string; password: string }) => {
       await loginMutation.mutateAsync(payload);
-      router.replace("/dashboard");
+      router.replace(getStoredOnboardingProfile() ? "/dashboard" : "/onboarding");
     },
     [loginMutation, router],
   );
@@ -69,7 +70,7 @@ export function useAuth() {
   const signUp = useCallback(
     async (payload: { name: string; username: string; email: string; password: string }) => {
       await registerMutation.mutateAsync(payload);
-      router.replace("/dashboard");
+      router.replace(getStoredOnboardingProfile() ? "/dashboard" : "/onboarding");
     },
     [registerMutation, router],
   );

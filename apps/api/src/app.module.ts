@@ -5,6 +5,7 @@ import { validateEnvironment } from "./config/env.validation";
 import { PrismaModule } from "./lib/prisma/prisma.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { HealthModule } from "./modules/health/health.module";
+import { OnboardingModule } from "./modules/onboarding/onboarding.module";
 import { ProfilesModule } from "./modules/profiles/profiles.module";
 import { UsersModule } from "./modules/users/users.module";
 
@@ -19,6 +20,7 @@ import { UsersModule } from "./modules/users/users.module";
     PrismaModule,
     AuthModule,
     HealthModule,
+    OnboardingModule,
     ProfilesModule,
     UsersModule,
   ],
