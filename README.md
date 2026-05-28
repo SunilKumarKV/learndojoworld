@@ -1,59 +1,345 @@
 # LearnDojoWorld
 
-LearnDojoWorld is a startup-grade AI learning operating system designed to help learners, educators, and teams build structured learning paths with intelligent guidance.
+LearnDojoWorld is a startup-grade AI learning operating system designed to help learners, creators, educators, and teams build structured learning paths with intelligent guidance, active recall systems, and scalable learning workflows.
 
-This repository is being prepared as the production foundation for the LearnDojoWorld platform. It is intentionally clean and minimal at this stage: no demo app, no cloned starter experience, and no Phase 2 product surface.
+This repository contains the production foundation for the LearnDojoWorld platform.
 
-## Phase 1 Goal
+---
 
-Phase 1 focuses on the foundation and learner MVP:
+# Vision
 
-- Establish a clean PNPM monorepo structure.
-- Prepare the application and package boundaries.
-- Set up the base infrastructure direction for database, cache, and services.
-- Keep the product scope focused on the learner MVP.
+LearnDojoWorld aims to become a global learning ecosystem focused on:
 
-Authentication, advanced AI workflows, monetization, admin systems, and other Phase 2 capabilities are intentionally not implemented yet.
+- active learning
+- creator-led education
+- structured learning roadmaps
+- AI-assisted learning systems
+- long-term knowledge retention
+- scalable learning infrastructure
 
-## Tech Stack
+The platform is being built as a real production startup system — not a demo application or clone project.
+
+---
+
+# Current Product Status
+
+## Implemented
+
+- PNPM monorepo architecture
+- Next.js learner web application
+- NestJS backend API
+- PostgreSQL + Prisma integration
+- Docker local infrastructure
+- Authentication system
+- Learner onboarding flow
+- Learner dashboard foundation
+- Protected routes
+- Shared packages architecture
+- GitHub Actions CI pipeline
+
+## In Progress
+
+- Learning roadmap engine
+- Progress tracking
+- Course/content systems
+- Continue-learning workflows
+- Creator workflows
+- Admin moderation tools
+
+## Planned
+
+- AI tutoring system
+- Personalized recommendations
+- Mobile applications
+- Realtime collaboration
+- Creator monetization
+- Enterprise learning systems
+- Analytics platform
+
+---
+
+# Tech Stack
+
+## Frontend
 
 - Next.js
-- NestJS
-- PostgreSQL
-- Prisma
-- Redis
-- PNPM
+- React
+- TypeScript
+- Tailwind CSS
+- TanStack Query
 
-## Repository Structure
+## Backend
+
+- NestJS
+- Prisma
+- PostgreSQL
+- Redis
+
+## Infrastructure
+
+- Docker
+- GitHub Actions
+- PNPM Workspaces
+
+---
+
+# Repository Structure
 
 ```text
 learndojoworld/
-  apps/
-  packages/
-  prisma/
-  docs/
-  scripts/
-  .env.example
-  .gitignore
-  README.md
-  package.json
-  pnpm-workspace.yaml
+├── apps/
+│   ├── web/
+│   └── api/
+│
+├── packages/
+│   ├── ui/
+│   ├── shared/
+│   ├── config/
+│   ├── validators/
+│   └── sdk/
+│
+├── prisma/
+├── docs/
+├── scripts/
+├── .github/
+├── package.json
+├── pnpm-workspace.yaml
+└── README.md
 ```
 
-## Getting Started
+---
 
-Install dependencies after apps and packages are added:
+# Setup
+
+## 1. Install Dependencies
 
 ```bash
 pnpm install
 ```
 
-Run development services once the app workspaces exist:
+## 2. Start Local Infrastructure
+
+```bash
+docker compose up -d
+```
+
+## 3. Configure Environment Variables
+
+```bash
+cp .env.example .env
+```
+
+Update local environment values before running the application.
+
+---
+
+# Database Setup
+
+## Generate Prisma Client
+
+```bash
+pnpm db:generate
+```
+
+## Run Migrations
+
+```bash
+pnpm db:migrate
+```
+
+## Seed Development Data
+
+```bash
+pnpm db:seed
+```
+
+---
+
+# Development
+
+## Start Development Servers
 
 ```bash
 pnpm dev
 ```
 
-## Environment
+## Web App
 
-Copy `.env.example` to `.env` and provide local values when services are introduced..
+```text
+http://localhost:3000
+```
+
+## API Server
+
+```text
+http://localhost:4000
+```
+
+---
+
+# Quality Commands
+
+## Lint
+
+```bash
+pnpm lint
+```
+
+## Typecheck
+
+```bash
+pnpm typecheck
+```
+
+## Build
+
+```bash
+pnpm build
+```
+
+## Format Check
+
+```bash
+pnpm format:check
+```
+
+---
+
+# Branch Workflow
+
+## Main Branch
+
+`main` contains stable production-ready code only.
+
+## Feature Development
+
+Create new branches from main:
+
+```bash
+git checkout main
+git pull origin main
+git checkout -b feature/my-feature
+```
+
+## Branch Naming
+
+- `feature/*`
+- `fix/*`
+- `chore/*`
+- `docs/*`
+
+Examples:
+
+```text
+feature/auth-ui
+feature/dashboard-engine
+fix/onboarding-validation
+chore/repo-cleanup
+```
+
+## Pull Request Requirements
+
+Before opening a PR:
+
+```bash
+pnpm lint
+pnpm typecheck
+pnpm build
+```
+
+All CI checks must pass before merge.
+
+---
+
+# Deployment Direction
+
+## Web Application
+
+- Framework: Next.js
+- Deployment Target: Vercel
+
+## Backend API
+
+- Framework: NestJS
+- Deployment Target: Railway / Render / AWS
+
+## Database
+
+- PostgreSQL
+- Prisma ORM
+
+## Infrastructure
+
+- Docker-based local development
+- GitHub Actions CI
+- PNPM monorepo architecture
+
+---
+
+# Security
+
+- Never commit `.env` files
+- Never commit API secrets or credentials
+- Use `.env.example` files for templates only
+- Use secure environment managers in production
+
+See `SECURITY.md` for additional details.
+
+---
+
+# Startup Roadmap
+
+## Phase 1 — Foundation
+
+- Monorepo architecture
+- Auth system
+- Learner onboarding
+- Dashboard foundation
+- CI/CD stabilization
+
+## Phase 2 — Learning Engine
+
+- Learning roadmap system
+- Progress tracking
+- Continue-learning engine
+- Streaks and XP system
+
+## Phase 3 — Creator Platform
+
+- Creator dashboard
+- Course publishing
+- Revenue systems
+- Creator analytics
+
+## Phase 4 — AI Platform
+
+- AI tutoring
+- Smart revision engine
+- Personalized recommendations
+- AI-generated quizzes
+
+## Phase 5 — Scale
+
+- Mobile applications
+- Enterprise learning tools
+- Global infrastructure
+- Realtime collaboration systems
+
+---
+
+# Contributing
+
+Please read:
+
+- `CONTRIBUTING.md`
+- `SECURITY.md`
+
+before contributing to the project.
+
+---
+
+# License
+
+This repository is currently under active startup development.
+
+License configuration will be finalized before public production release.
