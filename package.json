@@ -46,8 +46,11 @@
       "eslint --fix",
       "prettier --write"
     ],
-    "*.{json,jsonc,md,css,yml,yaml,prisma}": [
+    "*.{json,jsonc,md,css,yml,yaml}": [
       "prettier --write"
+    ],
+    "*.prisma": [
+      "pnpm exec prisma format"
     ]
   }
 }
