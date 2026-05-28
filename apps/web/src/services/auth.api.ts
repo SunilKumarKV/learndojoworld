@@ -1,5 +1,5 @@
 const STORAGE_KEY = "ldw_auth_tokens";
-const API_BASE = String(process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3333/api/v1").replace(
+const API_BASE = String(process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api/v1").replace(
   /\/+$/g,
   "",
 );
