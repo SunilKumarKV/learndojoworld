@@ -6,19 +6,17 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useAuth } from "@/features/auth/hooks/use-auth";
-import { useOnboardingStatus } from "@/features/onboarding/hooks/use-onboarding-status";
+import { EmptyState } from "@/features/dashboard/components/empty-state";
+import { ErrorState } from "@/features/dashboard/components/error-state";
+import { LoadingState } from "@/features/dashboard/components/loading-state";
+import { useDashboard } from "@/features/dashboard/hooks/use-dashboard";
 import { useSession } from "@/hooks/use-session";
-import { getStoredOnboardingProfile } from "@/services/onboarding.api";
 
 export default function DashboardPage() {
   const router = useRouter();
   const { user, isLoading } = useSession();
   const { logout } = useAuth();
-  const { data: onboardingStatus, isLoading: onboardingLoading } = useOnboardingStatus(
-    Boolean(user),
-    user?.id,
-  );
-  const onboardingProfile = onboardingStatus ?? getStoredOnboardingProfile();
+  const { data, isLoading: dashboardLoading, isError, error } = useDashboard();
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -26,19 +24,43 @@ export default function DashboardPage() {
     }
   }, [isLoading, user, router]);
 
-  if (isLoading || onboardingLoading || (!user && typeof window !== "undefined")) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-10">
-        <div className="rounded-3xl border border-slate-200 bg-white p-10 shadow-soft-xl">
-          <p className="text-base font-medium text-slate-700">Loading your learner dashboard…</p>
-        </div>
-      </div>
-    );
+  if (isLoading || dashboardLoading || (!user && typeof window !== "undefined")) {
+    return <LoadingState />;
   }
 
   if (!user) {
     return null;
   }
+
+  if (isError) {
+    return (
+      <ErrorState
+        message={error instanceof Error ? error.message : "We could not load your dashboard."}
+      />
+    );
+  }
+
+  const dashboard = data ?? {
+    continueLearning: null,
+    profile: {
+      dailyGoalMin: 30,
+      fullName: user.name ?? user.username ?? "Learner",
+      goals: [],
+      learningStyle: [],
+      skillLevel: "BEGINNER",
+      topics: [],
+    },
+    recommendations: [],
+    roadmap: [],
+    stats: {
+      completedLessons: 0,
+      currentStreak: 0,
+      dailyGoalMin: 30,
+      enrolledCourses: 0,
+      todayLearningMin: 0,
+      xp: 0,
+    },
+  };
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-10 sm:px-6 lg:px-8">
@@ -49,11 +71,11 @@ export default function DashboardPage() {
               Learner dashboard
             </p>
             <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
-              Welcome back, {user.name ?? user.username}.
+              Welcome back, {dashboard.profile.fullName || user.name || user.username}.
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-              Your learner dashboard shell is now onboarding-aware, with your goals, focus areas,
-              and daily rhythm surfaced from your profile.
+              Your learner dashboard now uses real learner profile and progress data from the
+              backend foundation.
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -73,14 +95,14 @@ export default function DashboardPage() {
             <CardContent>
               <p className="text-sm leading-6 text-slate-600">
                 Your path is aligned to{" "}
-                {onboardingProfile?.goals?.join(", ") ?? "your selected goals"} and{" "}
-                {onboardingProfile?.topics?.join(", ") ?? "your topics"}.
+                {dashboard.profile.goals.join(", ") || "your selected goals"} and{" "}
+                {dashboard.profile.topics.join(", ") || "your topics"}.
               </p>
               <div className="mt-5 rounded-3xl bg-slate-50 p-4 text-sm text-slate-700">
                 <p className="font-semibold text-slate-900">Current plan</p>
                 <p className="mt-2">
-                  Level: {onboardingProfile?.level ?? "BEGINNER"} · Daily goal:{" "}
-                  {onboardingProfile?.dailyGoalMin ?? 30} min
+                  Level: {dashboard.profile.skillLevel || "BEGINNER"} · Daily goal:{" "}
+                  {dashboard.profile.dailyGoalMin} min
                 </p>
               </div>
             </CardContent>
@@ -93,7 +115,7 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <p className="text-4xl font-semibold text-slate-950">
-                {onboardingProfile?.dailyGoalMin ?? 30} min
+                {dashboard.profile.dailyGoalMin} min
               </p>
               <p className="mt-2 text-sm text-slate-600">
                 A practical daily target for your learner routine.
@@ -108,7 +130,10 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
-                {(onboardingProfile?.topics ?? ["JavaScript", "React"]).map((topic) => (
+                {(dashboard.profile.topics.length > 0
+                  ? dashboard.profile.topics
+                  : ["No topics selected yet"]
+                ).map((topic) => (
                   <span
                     key={topic}
                     className="rounded-full bg-primary/8 px-3 py-1 text-sm text-primary"
@@ -126,36 +151,90 @@ export default function DashboardPage() {
               <h2 className="mt-3 text-xl font-semibold text-slate-950">Next up</h2>
             </CardHeader>
             <CardContent>
-              <p className="text-sm leading-6 text-slate-600">
-                Learning paths, modules, and progress tracking will arrive in the next iteration of
-                the learner workspace.
+              {dashboard.continueLearning ? (
+                <>
+                  <p className="text-sm font-semibold text-slate-900">
+                    {dashboard.continueLearning.courseTitle}
+                  </p>
+                  <p className="mt-1 text-sm text-slate-600">
+                    {dashboard.continueLearning.lessonTitle}
+                  </p>
+                  <p className="mt-3 text-sm text-primary">
+                    {dashboard.continueLearning.progressPercent}% complete
+                  </p>
+                </>
+              ) : (
+                <EmptyState
+                  title="No active lesson yet"
+                  description="Your continue-learning card will appear here when course progress is added."
+                />
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">XP & streak</p>
+              <h2 className="mt-3 text-xl font-semibold text-slate-950">Progress foundation</h2>
+            </CardHeader>
+            <CardContent>
+              <p className="text-4xl font-semibold text-slate-950">{dashboard.stats.xp} XP</p>
+              <p className="mt-2 text-sm text-slate-600">
+                Current streak: {dashboard.stats.currentStreak} day(s)
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">AI mentor</p>
-              <h2 className="mt-3 text-xl font-semibold text-slate-950">Coming soon</h2>
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Roadmap</p>
+              <h2 className="mt-3 text-xl font-semibold text-slate-950">
+                Personalized learning path
+              </h2>
             </CardHeader>
-            <CardContent>
-              <p className="text-sm leading-6 text-slate-600">
-                Personalized mentor guidance is planned for a future release and is intentionally
-                not implemented here.
-              </p>
+            <CardContent className="space-y-3">
+              {dashboard.roadmap.length > 0 ? (
+                dashboard.roadmap.map((item) => (
+                  <div
+                    key={item.id}
+                    className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                  >
+                    <p className="text-sm font-semibold text-slate-900">{item.title}</p>
+                    <p className="mt-1 text-sm text-slate-600">{item.description}</p>
+                    <p className="mt-2 text-xs uppercase tracking-[0.2em] text-primary">
+                      {item.status}
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <EmptyState
+                  title="No roadmap items yet"
+                  description="Your roadmap will be generated from your onboarding topics and goals."
+                />
+              )}
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="lg:col-span-3">
             <CardHeader>
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Revision due</p>
-              <h2 className="mt-3 text-xl font-semibold text-slate-950">Coming soon</h2>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm leading-6 text-slate-600">
-                A revision and spaced repetition system will appear once the learner operations
-                layer is live.
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                Recommended next actions
               </p>
+              <h2 className="mt-3 text-xl font-semibold text-slate-950">What to do next</h2>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {dashboard.recommendations.map((item) => (
+                <div
+                  key={`${item.title}-${item.type}`}
+                  className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                >
+                  <p className="text-sm font-semibold text-slate-900">{item.title}</p>
+                  <p className="mt-1 text-sm text-slate-600">{item.description}</p>
+                  <p className="mt-2 text-xs uppercase tracking-[0.2em] text-primary">
+                    {item.type}
+                  </p>
+                </div>
+              ))}
             </CardContent>
           </Card>
         </div>
