@@ -142,22 +142,60 @@ model CourseModule {
 }
 
 model Lesson {
-  id            String       @id @default(uuid()) @db.Uuid
-  moduleId      String       @db.Uuid
-  module        CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  title         String
-  slug          String
-  type          LessonType   @default(ARTICLE)
-  order         Int
-  content       String
-  videoUrl      String?
-  durationSec   Int?
-  isPreview     Boolean      @default(false)
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  id               String           @id @default(uuid()) @db.Uuid
+  moduleId         String           @db.Uuid
+  module           CourseModule     @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  title            String
+  slug             String
+  type             LessonType       @default(ARTICLE)
+  order            Int
+  content          String
+  videoUrl         String?
+  durationSec      Int?
+  isPreview        Boolean          @default(false)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  lessonProgresses LessonProgress[]
+  learningActivities LearningActivity[]
 
   @@unique([moduleId, slug])
   @@index([moduleId, order])
+}
+
+model LessonProgress {
+  id             String    @id @default(uuid()) @db.Uuid
+  userId         String    @db.Uuid
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId       String    @db.Uuid
+  lesson         Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  courseId       String    @db.Uuid
+  course         Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  status         String    @default("IN_PROGRESS")
+  watchedSec     Int       @default(0)
+  completedAt    DateTime?
+  lastActivityAt DateTime  @default(now())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([userId, lessonId])
+  @@index([userId, courseId])
+  @@index([courseId, status])
+}
+
+model LearningActivity {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId  String?  @db.Uuid
+  lesson    Lesson?  @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  courseId  String?  @db.Uuid
+  course    Course?  @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  type      String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([courseId, createdAt])
 }
 
 model Enrollment {
