@@ -21,15 +21,45 @@ export type AuthTokenPayload = {
   user?: AuthUser;
 };
 
+export type AuthLoginForm = {
+  identifier: string;
+  password: string;
+};
+
+export type AuthRegisterForm = {
+  name: string;
+  username: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+};
+
+export type ForgotPasswordForm = {
+  email: string;
+};
+
+export type ResetPasswordForm = {
+  code: string;
+  password: string;
+  confirmPassword: string;
+};
+
+export type VerifyEmailForm = {
+  email: string;
+  code: string;
+};
+
 export type RegisterPayload = {
-  fullName: string;
+  fullName?: string;
+  name?: string;
   username: string;
   email: string;
   password: string;
 };
 
 export type LoginPayload = {
-  email: string;
+  identifier?: string;
+  email?: string;
   password: string;
 };
 
@@ -38,12 +68,16 @@ export type ForgotPasswordPayload = {
 };
 
 export type ResetPasswordPayload = {
-  token: string;
-  newPassword: string;
+  token?: string;
+  code?: string;
+  newPassword?: string;
+  password?: string;
 };
 
 export type VerifyEmailPayload = {
-  token: string;
+  token?: string;
+  email?: string;
+  code?: string;
 };
 
 export type AuthStateStatus = "idle" | "loading" | "authenticated" | "unauthenticated";
