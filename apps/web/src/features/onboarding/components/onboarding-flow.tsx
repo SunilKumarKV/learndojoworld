@@ -2,12 +2,13 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Check, Sparkles } from "lucide-react";
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useOnboarding } from "@/features/onboarding/hooks/use-onboarding";
+import type { OnboardingStatusResponse } from "@/services/onboarding.api";
 import {
   onboardingSchema,
   type OnboardingFormInput,
@@ -30,7 +31,11 @@ const learningStyles = ["videos", "quizzes", "flashcards", "AI explanations", "p
 
 const skillLevels = ["BEGINNER", "INTERMEDIATE", "ADVANCED"] as const;
 
-export function OnboardingFlow() {
+export function OnboardingFlow({
+  initialProfile,
+}: {
+  initialProfile?: OnboardingStatusResponse | undefined;
+}) {
   const [step, setStep] = useState(0);
   const { mutateAsync, isPending, isError, error } = useOnboarding();
 
@@ -46,6 +51,16 @@ export function OnboardingFlow() {
   });
 
   const progress = useMemo(() => ((step + 1) / 5) * 100, [step]);
+
+  useEffect(() => {
+    form.reset({
+      dailyGoalMin: initialProfile?.dailyGoalMin ?? 30,
+      goals: initialProfile?.goals ?? [],
+      learningStyle: initialProfile?.learningStyle ?? [],
+      level: (initialProfile?.level ?? "BEGINNER") as OnboardingFormValues["level"],
+      topics: initialProfile?.topics ?? [],
+    });
+  }, [form, initialProfile]);
 
   const onSubmit = async (values: OnboardingFormValues) => {
     await mutateAsync(values);

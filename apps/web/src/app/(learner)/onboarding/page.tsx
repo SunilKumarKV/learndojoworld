@@ -1,28 +1,54 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { OnboardingFlow } from "@/features/onboarding/components/onboarding-flow";
+import { useOnboardingStatus } from "@/features/onboarding/hooks/use-onboarding-status";
 import { useSession } from "@/hooks/use-session";
-import { getStoredOnboardingProfile } from "@/services/onboarding.api";
 
 export default function OnboardingPage() {
+  return (
+    <Suspense fallback={<LoadingState />}>
+      <OnboardingPageContent />
+    </Suspense>
+  );
+}
+
+function LoadingState() {
+  return (
+    <main className="min-h-screen bg-slate-50 px-4 py-10 sm:px-6 lg:px-8">
+      <div className="mx-auto flex max-w-5xl items-center justify-center rounded-[2rem] border border-slate-200 bg-white p-10 shadow-soft-xl">
+        <p className="text-base font-medium text-slate-700">Preparing your onboarding session…</p>
+      </div>
+    </main>
+  );
+}
+
+function OnboardingPageContent() {
   const router = useRouter();
-  const { user, isLoading } = useSession();
+  const searchParams = useSearchParams();
+  const isEditing = searchParams.get("edit") === "1";
+  const { user, isLoading: sessionLoading, isError: sessionError } = useSession();
+  const {
+    data: onboardingStatus,
+    isLoading: onboardingLoading,
+    isError: onboardingError,
+  } = useOnboardingStatus(Boolean(user), user?.id);
+  const initialProfile = onboardingStatus ? { ...onboardingStatus } : undefined;
 
   useEffect(() => {
-    if (!isLoading && !user) {
+    if (!sessionLoading && !user) {
       router.replace("/login");
       return;
     }
 
-    if (!isLoading && user && getStoredOnboardingProfile()) {
+    if (!sessionLoading && user && onboardingStatus?.completed && !isEditing) {
       router.replace("/dashboard");
     }
-  }, [isLoading, router, user]);
+  }, [isEditing, onboardingStatus, router, sessionLoading, user]);
 
-  if (isLoading) {
+  if (sessionLoading || onboardingLoading) {
     return (
       <main className="min-h-screen bg-slate-50 px-4 py-10 sm:px-6 lg:px-8">
         <div className="mx-auto flex max-w-5xl items-center justify-center rounded-[2rem] border border-slate-200 bg-white p-10 shadow-soft-xl">
@@ -34,6 +60,18 @@ export default function OnboardingPage() {
 
   if (!user) {
     return null;
+  }
+
+  if (sessionError || onboardingError) {
+    return (
+      <main className="min-h-screen bg-slate-50 px-4 py-10 sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-5xl items-center justify-center rounded-[2rem] border border-red-200 bg-red-50 p-10 text-center shadow-soft-xl">
+          <p className="text-base font-medium text-red-700">
+            We could not load your onboarding status right now.
+          </p>
+        </div>
+      </main>
+    );
   }
 
   return (
@@ -52,7 +90,7 @@ export default function OnboardingPage() {
           </p>
         </section>
 
-        <OnboardingFlow />
+        <OnboardingFlow initialProfile={initialProfile} />
       </div>
     </main>
   );

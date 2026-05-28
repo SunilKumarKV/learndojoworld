@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useAuth } from "@/features/auth/hooks/use-auth";
+import { useOnboardingStatus } from "@/features/onboarding/hooks/use-onboarding-status";
 import { useSession } from "@/hooks/use-session";
 import { getStoredOnboardingProfile } from "@/services/onboarding.api";
 
@@ -13,7 +14,11 @@ export default function DashboardPage() {
   const router = useRouter();
   const { user, isLoading } = useSession();
   const { logout } = useAuth();
-  const onboardingProfile = getStoredOnboardingProfile();
+  const { data: onboardingStatus, isLoading: onboardingLoading } = useOnboardingStatus(
+    Boolean(user),
+    user?.id,
+  );
+  const onboardingProfile = onboardingStatus ?? getStoredOnboardingProfile();
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -21,7 +26,7 @@ export default function DashboardPage() {
     }
   }, [isLoading, user, router]);
 
-  if (isLoading || (!user && typeof window !== "undefined")) {
+  if (isLoading || onboardingLoading || (!user && typeof window !== "undefined")) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-10">
         <div className="rounded-3xl border border-slate-200 bg-white p-10 shadow-soft-xl">
@@ -52,7 +57,7 @@ export default function DashboardPage() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="secondary" onClick={() => router.push("/onboarding")}>
+            <Button variant="secondary" onClick={() => router.push("/onboarding?edit=1")}>
               Edit onboarding
             </Button>
             <Button onClick={logout}>Logout</Button>

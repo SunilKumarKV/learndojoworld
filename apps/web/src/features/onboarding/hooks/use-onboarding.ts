@@ -18,7 +18,10 @@ export function useOnboarding() {
       }
 
       storeOnboardingProfile(payload);
-      await queryClient.invalidateQueries({ queryKey: ["session"] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["session"] }),
+        queryClient.invalidateQueries({ queryKey: ["onboarding-status"] }),
+      ]);
 
       return response.data;
     },

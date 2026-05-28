@@ -12,6 +12,15 @@ export type LearnerOnboardingPayload = {
   learningStyle: string[];
 };
 
+export type OnboardingStatusResponse = {
+  completed: boolean;
+  goals: string[];
+  topics: string[];
+  level: string | null;
+  dailyGoalMin: number;
+  learningStyle: string[];
+};
+
 export type ApiResponse<T = unknown> = {
   success: boolean;
   message: string;
@@ -108,14 +117,7 @@ export async function submitLearnerOnboarding(payload: LearnerOnboardingPayload)
 }
 
 export async function getLearnerOnboarding() {
-  return request<{
-    completed: boolean;
-    goals: string[];
-    topics: string[];
-    level: string | null;
-    dailyGoalMin: number;
-    learningStyle: string[];
-  }>("/onboarding/learner");
+  return request<OnboardingStatusResponse>("/onboarding/learner");
 }
 
 export function storeOnboardingProfile(profile: LearnerOnboardingPayload) {
