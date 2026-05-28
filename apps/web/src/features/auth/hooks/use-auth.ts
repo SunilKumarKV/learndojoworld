@@ -11,6 +11,7 @@ import {
   persistAuthTokens,
   register,
 } from "@/services/auth.api";
+import { getLearnerOnboarding } from "@/services/onboarding.api";
 
 export function useAuth() {
   const router = useRouter();
@@ -58,20 +59,32 @@ export function useAuth() {
 
   const logoutUser = useCallback(() => logoutMutation.mutate(), [logoutMutation]);
 
+  const resolvePostAuthRoute = useCallback(async () => {
+    const response = await getLearnerOnboarding();
+
+    if (!response.success) {
+      throw new Error(response.message || "We could not load your onboarding status.");
+    }
+
+    return response.data.completed ? "/dashboard" : "/onboarding";
+  }, []);
+
   const signIn = useCallback(
     async (payload: { identifier: string; password: string }) => {
       await loginMutation.mutateAsync(payload);
-      router.replace("/dashboard");
+      const nextRoute = await resolvePostAuthRoute();
+      router.replace(nextRoute);
     },
-    [loginMutation, router],
+    [loginMutation, resolvePostAuthRoute, router],
   );
 
   const signUp = useCallback(
     async (payload: { name: string; username: string; email: string; password: string }) => {
       await registerMutation.mutateAsync(payload);
-      router.replace("/dashboard");
+      const nextRoute = await resolvePostAuthRoute();
+      router.replace(nextRoute);
     },
-    [registerMutation, router],
+    [registerMutation, resolvePostAuthRoute, router],
   );
 
   return {
