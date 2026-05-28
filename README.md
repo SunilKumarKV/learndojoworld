@@ -56,4 +56,4 @@ pnpm dev
 
 ## Environment
 
-Copy `.env.example` to `.env` and provide local values when services are introduced.
+Copy `.env.example` to `.env` and provide local values when services are introduced..
