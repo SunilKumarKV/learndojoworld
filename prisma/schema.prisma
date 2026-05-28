@@ -19,6 +19,18 @@ enum Difficulty {
   ADVANCED
 }
 
+enum CourseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum LessonType {
+  VIDEO
+  ARTICLE
+  EXERCISE
+}
+
 model User {
   id               String          @id @default(uuid()) @db.Uuid
   email            String          @unique
@@ -32,6 +44,7 @@ model User {
   lastLoginAt      DateTime?
   profile          Profile?
   creatorProfile   CreatorProfile?
+  enrollments      Enrollment[]
   auditLogs        AuditLog[]      @relation("AuditActor")
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
@@ -73,6 +86,94 @@ model CreatorProfile {
   updatedAt   DateTime @updatedAt
 
   @@index([isVerified])
+}
+
+model Category {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  courses     Course[]
+
+  @@index([slug])
+}
+
+model Course {
+  id            String        @id @default(uuid()) @db.Uuid
+  categoryId    String?       @db.Uuid
+  category      Category?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  title         String
+  slug          String        @unique
+  subtitle      String?
+  description   String
+  thumbnailUrl  String?
+  difficulty    Difficulty    @default(BEGINNER)
+  language      String        @default("English")
+  status        CourseStatus  @default(DRAFT)
+  isFree        Boolean       @default(true)
+  price         Decimal?      @db.Decimal(10, 2)
+  currency      String        @default("USD")
+  publishedAt   DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  modules       CourseModule[]
+  enrollments   Enrollment[]
+
+  @@index([status])
+  @@index([difficulty])
+  @@index([categoryId])
+  @@index([publishedAt])
+}
+
+model CourseModule {
+  id        String   @id @default(uuid()) @db.Uuid
+  courseId  String   @db.Uuid
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title     String
+  order     Int
+  lessons   Lesson[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([courseId, order])
+  @@index([courseId, order])
+}
+
+model Lesson {
+  id            String       @id @default(uuid()) @db.Uuid
+  moduleId      String       @db.Uuid
+  module        CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  title         String
+  slug          String
+  type          LessonType   @default(ARTICLE)
+  order         Int
+  content       String
+  videoUrl      String?
+  durationSec   Int?
+  isPreview     Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@unique([moduleId, slug])
+  @@index([moduleId, order])
+}
+
+model Enrollment {
+  id               String    @id @default(uuid()) @db.Uuid
+  userId           String    @db.Uuid
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId         String    @db.Uuid
+  course           Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  progressPercent  Float     @default(0)
+  completedAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@index([courseId])
 }
 
 model AuditLog {
