@@ -38,10 +38,7 @@ export class ProgressController {
 
   @UseGuards(JwtAuthGuard)
   @Get("courses/:courseId")
-  getCourseProgress(
-    @CurrentUser() user: AuthenticatedUser,
-    @Param("courseId") courseId: string,
-  ) {
+  getCourseProgress(@CurrentUser() user: AuthenticatedUser, @Param("courseId") courseId: string) {
     return this.learningService.getCourseProgress(user.id, courseId);
   }
 }

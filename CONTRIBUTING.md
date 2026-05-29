@@ -12,10 +12,10 @@ Thank you for contributing to LearnDojoWorld.
 
 ## Branch Naming
 
-* `feature/*`
-* `fix/*`
-* `chore/*`
-* `docs/*`
+- `feature/*`
+- `fix/*`
+- `chore/*`
+- `docs/*`
 
 ## Required Checks
 
@@ -31,17 +31,17 @@ pnpm build
 
 PRs should:
 
-* remain focused
-* avoid unrelated changes
-* include smoke-test notes
-* pass CI checks
+- remain focused
+- avoid unrelated changes
+- include smoke-test notes
+- pass CI checks
 
 ## Security
 
 Never commit:
 
-* `.env`
-* API keys
-* tokens
-* passwords
-* production secrets
+- `.env`
+- API keys
+- tokens
+- passwords
+- production secrets

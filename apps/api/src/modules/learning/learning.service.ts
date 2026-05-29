@@ -1,9 +1,5 @@
-import {
-  ConflictException,
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
+import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import { Prisma } from "@prisma/client";
 
 import { PrismaService } from "../../lib/prisma/prisma.service";
 
@@ -46,10 +42,6 @@ export class LearningService {
   async startLesson(userId: string, lessonId: string) {
     const lesson = await this.ensureLessonAccess(userId, lessonId);
 
-    const existing = await this.prisma.lessonProgress.findUnique({
-      where: { userId_lessonId: { lessonId, userId } },
-    });
-
     const progress = await this.prisma.lessonProgress.upsert({
       create: {
         courseId: lesson.module.courseId,
@@ -81,7 +73,8 @@ export class LearningService {
 
     const safeWatchedSec = Math.max(0, watchedSec);
     const duration = lesson.durationSec ?? 0;
-    const computedProgress = duration > 0 ? Math.min(100, Math.round((safeWatchedSec / duration) * 100)) : 0;
+    const computedProgress =
+      duration > 0 ? Math.min(100, Math.round((safeWatchedSec / duration) * 100)) : 0;
 
     const progress = await this.prisma.lessonProgress.upsert({
       create: {
@@ -93,9 +86,13 @@ export class LearningService {
       },
       update: {
         lastActivityAt: new Date(),
-        status: completed ? "COMPLETED" : current?.status === "COMPLETED" ? "COMPLETED" : "IN_PROGRESS",
+        status: completed
+          ? "COMPLETED"
+          : current?.status === "COMPLETED"
+            ? "COMPLETED"
+            : "IN_PROGRESS",
         watchedSec: Math.max(current?.watchedSec ?? 0, safeWatchedSec),
-        completedAt: completed ? new Date() : current?.completedAt ?? null,
+        completedAt: completed ? new Date() : (current?.completedAt ?? null),
       },
       where: { userId_lessonId: { lessonId, userId } },
     });
@@ -181,7 +178,8 @@ export class LearningService {
       where: { courseId, userId },
     });
 
-    const progressPercent = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+    const progressPercent =
+      totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
 
     return {
       completedLessons,
@@ -212,11 +210,16 @@ export class LearningService {
     const totalLessons = await this.prisma.lesson.count({
       where: { module: { courseId: latest.courseId } },
     });
-    const progressPercent = totalLessons > 0
-      ? Math.round((await this.prisma.lessonProgress.count({
-          where: { courseId: latest.courseId, status: "COMPLETED", userId },
-        }) / totalLessons) * 100)
-      : 0;
+    const progressPercent =
+      totalLessons > 0
+        ? Math.round(
+            ((await this.prisma.lessonProgress.count({
+              where: { courseId: latest.courseId, status: "COMPLETED", userId },
+            })) /
+              totalLessons) *
+              100,
+          )
+        : 0;
 
     return {
       courseId: latest.courseId,
@@ -270,7 +273,8 @@ export class LearningService {
       where: { courseId, status: "COMPLETED", userId },
     });
 
-    const progressPercent = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+    const progressPercent =
+      totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
 
     await this.prisma.enrollment.updateMany({
       data: { progressPercent },
@@ -295,7 +299,7 @@ export class LearningService {
     await this.prisma.learningActivity.create({
       data: {
         lessonId,
-        metadata,
+        metadata: (metadata ?? null) as Prisma.InputJsonValue,
         type,
         userId,
         courseId,
