@@ -1,8 +1,24 @@
 import { PrismaClient } from "@prisma/client";
+import * as bcrypt from "bcrypt";
 
 const prisma = new PrismaClient();
 
 async function main() {
+  const bcryptModule = bcrypt as unknown as { hashSync: (value: string, salt: number) => string };
+  const demoPasswordHash = bcryptModule.hashSync("learn123", 10);
+
+  const demoUser = await prisma.user.upsert({
+    create: {
+      email: "demo@learndojoworld.com",
+      name: "Demo Learner",
+      passwordHash: demoPasswordHash,
+      role: "LEARNER",
+      username: "demo-learner",
+    },
+    update: {},
+    where: { email: "demo@learndojoworld.com" },
+  });
+
   const categories = await Promise.all([
     prisma.category.upsert({
       create: {
@@ -241,7 +257,75 @@ async function main() {
     }
   }
 
-  console.log("Seeded 3 published starter courses with modules and lessons.");
+  const courseRecords = await prisma.course.findMany({
+    include: { modules: { include: { lessons: true } } },
+    where: { status: "PUBLISHED" },
+  });
+
+  for (const course of courseRecords) {
+    const lesson = course.modules.flatMap((module) => module.lessons)[0];
+
+    if (!lesson) {
+      continue;
+    }
+
+    const existingQuiz = await prisma.quiz.findFirst({
+      where: { courseId: course.id, lessonId: lesson.id },
+    });
+
+    if (existingQuiz) {
+      continue;
+    }
+
+    const quiz = await prisma.quiz.create({
+      data: {
+        courseId: course.id,
+        lessonId: lesson.id,
+        passScore: 70,
+        title: `${course.title} memory check`,
+      },
+    });
+
+    await prisma.question.createMany({
+      data: [
+        {
+          answer: { correctIndex: 1 },
+          explanation: "React state updates via setter functions to keep the UI in sync.",
+          options: ["Props", "State", "Routes", "Styles"],
+          points: 1,
+          question: "What drives component re-rendering when user input changes?",
+          quizId: quiz.id,
+        },
+        {
+          answer: { correctIndex: 0 },
+          explanation: "Async functions make asynchronous code read like synchronous steps.",
+          options: ["async/await", "forEach", "console.log", "setTimeout"],
+          points: 1,
+          question: "Which pattern makes promise-based code easier to read?",
+          quizId: quiz.id,
+        },
+      ],
+      skipDuplicates: true,
+    });
+
+    await prisma.flashcard.createMany({
+      data: [
+        {
+          back: "Use state to store values that change over time and update the UI.",
+          courseId: course.id,
+          front: "What is state in React?",
+          lessonId: lesson.id,
+          tags: [course.title, "React"],
+          userId: demoUser.id,
+        },
+      ],
+      skipDuplicates: true,
+    });
+  }
+
+  console.log(
+    "Seeded 3 published starter courses, quizzes, flashcards, and a demo learner account.",
+  );
 }
 
 main()

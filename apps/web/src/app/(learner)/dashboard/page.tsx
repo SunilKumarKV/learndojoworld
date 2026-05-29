@@ -187,6 +187,57 @@ export default function DashboardPage() {
 
           <Card>
             <CardHeader>
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Revision due</p>
+              <h2 className="mt-3 text-xl font-semibold text-slate-950">Spaced repetition</h2>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-slate-600">
+                Open your revision hub to review cards due today and keep your learning loop moving.
+              </p>
+              <Button className="mt-4" variant="secondary" onClick={() => router.push("/revision")}>
+                Open revision
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Quiz performance</p>
+              <h2 className="mt-3 text-xl font-semibold text-slate-950">Memory checkpoints</h2>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-slate-600">
+                Start a real quiz, review explanations, and see the weak areas that need another
+                pass.
+              </p>
+              <Button className="mt-4" variant="secondary" onClick={() => router.push("/quizzes")}>
+                Browse quizzes
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Flashcards due</p>
+              <h2 className="mt-3 text-xl font-semibold text-slate-950">Daily recall</h2>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-slate-600">
+                Review your flashcard deck with FORGOT/HARD/GOOD/EASY scoring to build long-term
+                memory.
+              </p>
+              <Button
+                className="mt-4"
+                variant="secondary"
+                onClick={() => router.push("/flashcards")}
+              >
+                Review flashcards
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
               <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Roadmap</p>
               <h2 className="mt-3 text-xl font-semibold text-slate-950">
                 Personalized learning path

@@ -8,6 +8,7 @@ import { CoursesModule } from "./modules/courses/courses.module";
 import { DashboardModule } from "./modules/dashboard/dashboard.module";
 import { HealthModule } from "./modules/health/health.module";
 import { LearningModule } from "./modules/learning/learning.module";
+import { MemoryModule } from "./modules/memory/memory.module";
 import { OnboardingModule } from "./modules/onboarding/onboarding.module";
 import { ProfilesModule } from "./modules/profiles/profiles.module";
 import { UsersModule } from "./modules/users/users.module";
@@ -26,6 +27,7 @@ import { UsersModule } from "./modules/users/users.module";
     DashboardModule,
     HealthModule,
     LearningModule,
+    MemoryModule,
     OnboardingModule,
     ProfilesModule,
     UsersModule,

@@ -4,10 +4,10 @@
 
 Contributors should:
 
-* be respectful
-* provide constructive feedback
-* collaborate professionally
-* avoid harassment or discrimination
+- be respectful
+- provide constructive feedback
+- collaborate professionally
+- avoid harassment or discrimination
 
 ## Expectations
 
