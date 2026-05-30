@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { FlashcardDifficulty, Prisma } from "@prisma/client";
 
 import { PrismaService } from "../../lib/prisma/prisma.service";
+import { AnalyticsService } from "../analytics/analytics.service";
 
 const SPACED_REPETITION_DAYS: Record<FlashcardDifficulty, number> = {
   FORGOT: 1,
@@ -12,7 +13,10 @@ const SPACED_REPETITION_DAYS: Record<FlashcardDifficulty, number> = {
 
 @Injectable()
 export class MemoryService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly analyticsService: AnalyticsService,
+  ) {}
 
   async getQuizzes() {
     return this.prisma.quiz.findMany({
@@ -72,6 +76,24 @@ export class MemoryService {
         quizId,
         score: percentage,
         userId,
+      },
+    });
+
+    await this.analyticsService.trackEvent(userId, "quiz_completed", {
+      quizId,
+      passed,
+      score: percentage,
+    });
+    await this.prisma.learningActivity.create({
+      data: {
+        activityType: "QUIZ_COMPLETED",
+        courseId: quiz.courseId ?? null,
+        durationMinutes: 1,
+        lessonId: quiz.lessonId ?? null,
+        metadata: { passed, score: percentage },
+        type: "QUIZ_COMPLETED",
+        userId,
+        xpEarned: passed ? 25 : 0,
       },
     });
 
@@ -176,6 +198,23 @@ export class MemoryService {
       where: { id: flashcardId },
     });
 
+    await this.analyticsService.trackEvent(userId, "flashcard_reviewed", {
+      flashcardId,
+      difficulty,
+    });
+    await this.prisma.learningActivity.create({
+      data: {
+        activityType: "FLASHCARD_REVIEWED",
+        courseId: flashcard.courseId ?? null,
+        durationMinutes: 1,
+        lessonId: flashcard.lessonId ?? null,
+        metadata: { difficulty },
+        type: "FLASHCARD_REVIEWED",
+        userId,
+        xpEarned: 2,
+      },
+    });
+
     return { difficulty, flashcardId, nextReviewAt };
   }
 
@@ -214,6 +253,21 @@ export class MemoryService {
       quizAttempts.length > 0
         ? Math.round(quizAttempts.reduce((sum, item) => sum + item.score, 0) / quizAttempts.length)
         : 0;
+
+    await this.analyticsService.trackEvent(userId, "revision_completed", {
+      dueToday,
+      totalFlashcards: dueCards.length,
+    });
+    await this.prisma.learningActivity.create({
+      data: {
+        activityType: "REVISION_COMPLETED",
+        durationMinutes: 1,
+        metadata: { averageScore, dueToday },
+        type: "REVISION_COMPLETED",
+        userId,
+        xpEarned: 15,
+      },
+    });
 
     return {
       averageScore,
