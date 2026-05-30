@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../lib/prisma/prisma.service";
+import { AnalyticsService } from "../analytics/analytics.service";
 import type { LearnerOnboardingDto } from "./dto/learner-onboarding.dto";
 
 type LearnerOnboardingResponse = {
@@ -14,7 +15,10 @@ type LearnerOnboardingResponse = {
 
 @Injectable()
 export class OnboardingService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly analyticsService: AnalyticsService,
+  ) {}
 
   async saveLearnerOnboarding(
     userId: string,
@@ -48,6 +52,11 @@ export class OnboardingService {
       where: {
         userId,
       },
+    });
+
+    await this.analyticsService.trackEvent(userId, "onboarding_completed", {
+      goals: dto.goals,
+      topics: dto.topics,
     });
 
     return {

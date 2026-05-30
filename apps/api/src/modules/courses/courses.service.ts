@@ -1,10 +1,14 @@
 import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 
 import { PrismaService } from "../../lib/prisma/prisma.service";
+import { AnalyticsService } from "../analytics/analytics.service";
 
 @Injectable()
 export class CoursesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly analyticsService: AnalyticsService,
+  ) {}
 
   async getCategories() {
     return this.prisma.category.findMany({
@@ -126,7 +130,7 @@ export class CoursesService {
       throw new ConflictException("You are already enrolled in this course.");
     }
 
-    return this.prisma.enrollment.create({
+    const enrollment = await this.prisma.enrollment.create({
       data: {
         courseId,
         progressPercent: 0,
@@ -136,6 +140,10 @@ export class CoursesService {
         course: true,
       },
     });
+
+    await this.analyticsService.trackEvent(userId, "course_enrolled", { courseId });
+
+    return enrollment;
   }
 
   async getEnrollmentStatus(userId: string, courseId: string) {

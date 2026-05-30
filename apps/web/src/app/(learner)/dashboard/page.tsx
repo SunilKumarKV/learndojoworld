@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
@@ -11,18 +11,40 @@ import { ErrorState } from "@/features/dashboard/components/error-state";
 import { LoadingState } from "@/features/dashboard/components/loading-state";
 import { useDashboard } from "@/features/dashboard/hooks/use-dashboard";
 import { useSession } from "@/hooks/use-session";
+import { getActivityTimeline, getGamificationSummary, trackEvent } from "@/services/analytics.api";
 
 export default function DashboardPage() {
   const router = useRouter();
   const { user, isLoading } = useSession();
   const { logout } = useAuth();
   const { data, isLoading: dashboardLoading, isError, error } = useDashboard();
+  const [summary, setSummary] = useState<{
+    xp: number;
+    currentLevel: number;
+    nextLevelProgress: number;
+    currentStreak: number;
+    longestStreak: number;
+  } | null>(null);
+  const [timeline, setTimeline] = useState<
+    Array<{ event: string; xpEarned: number; createdAt: string }>
+  >([]);
 
   useEffect(() => {
     if (!isLoading && !user) {
       router.replace("/login");
     }
   }, [isLoading, user, router]);
+
+  useEffect(() => {
+    if (!user) return;
+    void trackEvent("dashboard_opened", { path: "/dashboard" });
+    void Promise.all([getGamificationSummary(), getActivityTimeline(4)]).then(
+      ([summaryResponse, timelineResponse]) => {
+        if (summaryResponse.success) setSummary(summaryResponse.data);
+        if (timelineResponse.success) setTimeline(timelineResponse.data);
+      },
+    );
+  }, [user]);
 
   if (isLoading || dashboardLoading || (!user && typeof window !== "undefined")) {
     return <LoadingState />;
@@ -119,6 +141,35 @@ export default function DashboardPage() {
               </p>
               <p className="mt-2 text-sm text-slate-600">
                 A practical daily target for your learner routine.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">XP</p>
+              <h2 className="mt-3 text-xl font-semibold text-slate-950">XP & level</h2>
+            </CardHeader>
+            <CardContent>
+              <p className="text-4xl font-semibold text-slate-950">{summary?.xp ?? 0} XP</p>
+              <p className="mt-2 text-sm text-slate-600">Level {summary?.currentLevel ?? 1}</p>
+              <p className="mt-2 text-xs uppercase tracking-[0.2em] text-primary">
+                {summary?.nextLevelProgress ?? 0}% to next level
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Streak</p>
+              <h2 className="mt-3 text-xl font-semibold text-slate-950">Learning streak</h2>
+            </CardHeader>
+            <CardContent>
+              <p className="text-4xl font-semibold text-slate-950">
+                {summary?.currentStreak ?? 0} days
+              </p>
+              <p className="mt-2 text-sm text-slate-600">
+                Longest streak: {summary?.longestStreak ?? 0} days
               </p>
             </CardContent>
           </Card>
@@ -263,6 +314,49 @@ export default function DashboardPage() {
                   description="Your roadmap will be generated from your onboarding topics and goals."
                 />
               )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Recent activity</p>
+              <h2 className="mt-3 text-xl font-semibold text-slate-950">Activity timeline</h2>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {timeline.length > 0 ? (
+                timeline.map((item) => (
+                  <div
+                    key={item.createdAt + item.event}
+                    className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                  >
+                    <p className="text-sm font-semibold text-slate-900">{item.event}</p>
+                    <p className="mt-1 text-xs uppercase tracking-[0.2em] text-primary">
+                      +{item.xpEarned} XP
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {new Date(item.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <EmptyState
+                  title="No recent activity yet"
+                  description="Activity will appear here as you learn."
+                />
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Achievements</p>
+              <h2 className="mt-3 text-xl font-semibold text-slate-950">Achievement preview</h2>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-slate-600">
+                The gamification foundation is now wired to your learner activity, XP, and streak
+                signals.
+              </p>
             </CardContent>
           </Card>
 

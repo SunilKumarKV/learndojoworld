@@ -2,10 +2,14 @@ import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/commo
 import { Prisma } from "@prisma/client";
 
 import { PrismaService } from "../../lib/prisma/prisma.service";
+import { AnalyticsService } from "../analytics/analytics.service";
 
 @Injectable()
 export class LearningService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly analyticsService: AnalyticsService,
+  ) {}
 
   async getLessonById(userId: string, lessonId: string) {
     const lesson = await this.prisma.lesson.findUnique({
@@ -57,7 +61,11 @@ export class LearningService {
       where: { userId_lessonId: { lessonId, userId } },
     });
 
-    await this.recordActivity(userId, "LESSON_STARTED", lessonId, lesson.module.courseId);
+    await this.recordActivity(userId, "LESSON_STARTED", lessonId, lesson.module.courseId, 0, 0);
+    await this.analyticsService.trackEvent(userId, "lesson_started", {
+      courseId: lesson.module.courseId,
+      lessonId,
+    });
 
     await this.syncEnrollmentProgress(userId, lesson.module.courseId);
 
@@ -98,11 +106,23 @@ export class LearningService {
     });
 
     if (completed) {
-      await this.recordActivity(userId, "LESSON_COMPLETED", lessonId, lesson.module.courseId, {
-        progressPercent: computedProgress,
+      await this.recordActivity(
+        userId,
+        "LESSON_COMPLETED",
+        lessonId,
+        lesson.module.courseId,
+        10,
+        1,
+        {
+          progressPercent: computedProgress,
+        },
+      );
+      await this.analyticsService.trackEvent(userId, "lesson_completed", {
+        courseId: lesson.module.courseId,
+        lessonId,
       });
     } else {
-      await this.recordActivity(userId, "LESSON_WATCHED", lessonId, lesson.module.courseId, {
+      await this.recordActivity(userId, "LESSON_WATCHED", lessonId, lesson.module.courseId, 0, 0, {
         progressPercent: computedProgress,
         watchedSec: safeWatchedSec,
       });
@@ -137,8 +157,12 @@ export class LearningService {
       where: { userId_lessonId: { lessonId, userId } },
     });
 
-    await this.recordActivity(userId, "LESSON_COMPLETED", lessonId, lesson.module.courseId, {
+    await this.recordActivity(userId, "LESSON_COMPLETED", lessonId, lesson.module.courseId, 10, 1, {
       progressPercent: 100,
+    });
+    await this.analyticsService.trackEvent(userId, "lesson_completed", {
+      courseId: lesson.module.courseId,
+      lessonId,
     });
 
     await this.syncEnrollmentProgress(userId, lesson.module.courseId);
@@ -294,15 +318,20 @@ export class LearningService {
     type: "LESSON_STARTED" | "LESSON_WATCHED" | "LESSON_COMPLETED",
     lessonId: string,
     courseId: string,
+    xpEarned = 0,
+    durationMinutes = 0,
     metadata?: Record<string, unknown>,
   ) {
     await this.prisma.learningActivity.create({
       data: {
+        activityType: type,
+        courseId,
+        durationMinutes,
         lessonId,
         metadata: (metadata ?? null) as Prisma.InputJsonValue,
         type,
         userId,
-        courseId,
+        xpEarned,
       },
     });
   }

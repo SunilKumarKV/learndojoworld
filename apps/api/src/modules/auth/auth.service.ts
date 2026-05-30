@@ -5,6 +5,7 @@ import { compare, hash } from "bcrypt";
 
 import type { EnvironmentVariables } from "../../config/env.validation";
 import { PrismaService } from "../../lib/prisma/prisma.service";
+import { AnalyticsService } from "../analytics/analytics.service";
 import type { LoginDto } from "./dto/login.dto";
 import type { RegisterDto } from "./dto/register.dto";
 import type { TokenPayload } from "./types/authenticated-user.type";
@@ -19,6 +20,7 @@ export class AuthService {
     private readonly configService: ConfigService<EnvironmentVariables, true>,
     private readonly jwtService: JwtService,
     private readonly prisma: PrismaService,
+    private readonly analyticsService: AnalyticsService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -66,6 +68,7 @@ export class AuthService {
     });
 
     await this.storeRefreshTokenHash(user.id, tokens.refreshToken);
+    await this.analyticsService.trackEvent(user.id, "user_registered", { email });
 
     return {
       user,

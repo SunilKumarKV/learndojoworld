@@ -55,6 +55,8 @@ model User {
   lessonProgresses   LessonProgress[]
   learningActivities LearningActivity[]
   quizAttempts       QuizAttempt[]
+  userEvents         UserEvent[]
+  userAchievements   UserAchievement[]
   flashcards         Flashcard[]
   flashcardReviews   FlashcardReview[]
   auditLogs          AuditLog[]         @relation("AuditActor")
@@ -201,16 +203,19 @@ model LessonProgress {
 }
 
 model LearningActivity {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @db.Uuid
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lessonId  String?  @db.Uuid
-  lesson    Lesson?  @relation(fields: [lessonId], references: [id], onDelete: SetNull)
-  courseId  String?  @db.Uuid
-  course    Course?  @relation(fields: [courseId], references: [id], onDelete: SetNull)
-  type      String
-  metadata  Json?
-  createdAt DateTime @default(now())
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @db.Uuid
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId        String?  @db.Uuid
+  lesson          Lesson?  @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  courseId        String?  @db.Uuid
+  course          Course?  @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  type            String
+  activityType    String?
+  xpEarned        Int      @default(0)
+  durationMinutes Int      @default(0)
+  metadata        Json?
+  createdAt       DateTime @default(now())
 
   @@index([userId, createdAt])
   @@index([courseId, createdAt])
@@ -246,6 +251,38 @@ model Question {
   updatedAt   DateTime @updatedAt
 
   @@index([quizId])
+}
+
+model UserEvent {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event     String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([event, createdAt])
+}
+
+model Achievement {
+  id               String            @id @default(uuid()) @db.Uuid
+  name             String
+  description      String
+  icon             String?
+  xpReward         Int               @default(0)
+  createdAt        DateTime          @default(now())
+  userAchievements UserAchievement[]
+}
+
+model UserAchievement {
+  userId        String      @db.Uuid
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievementId String      @db.Uuid
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  unlockedAt    DateTime    @default(now())
+
+  @@id([userId, achievementId])
 }
 
 model QuizAttempt {
