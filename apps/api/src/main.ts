@@ -10,7 +10,7 @@ import { ApiResponseInterceptor } from "./common/interceptors/api-response.inter
 import type { EnvironmentVariables } from "./config/env.validation";
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { rawBody: true });
   const configService = app.get(ConfigService<EnvironmentVariables, true>);
   const webOrigin = configService.get("WEB_ORIGIN", { infer: true });
   const apiPort = configService.get("API_PORT", { infer: true });

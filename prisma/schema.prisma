@@ -64,6 +64,7 @@ model User {
   flashcardReviews   FlashcardReview[]
   createdCourses     Course[]           @relation("CreatorCourses")
   auditLogs          AuditLog[]         @relation("AuditActor")
+  payments           Payment[]
   aiConversations    AIConversation[]   @relation("UserAIConversations")
   aiMessages         AIMessage[]        @relation("UserAIMessages")
   createdAt          DateTime           @default(now())
@@ -150,6 +151,7 @@ model Course {
   learningActivities LearningActivity[]
   quizzes            Quiz[]
   flashcards         Flashcard[]
+  payments           Payment[]
   aiConversations    AIConversation[]   @relation("CourseAIConversations")
   aiMessages         AIMessage[]        @relation("CourseAIMessages")
 
@@ -384,6 +386,41 @@ model AuditLog {
   @@index([action])
   @@index([entity, entityId])
   @@index([createdAt])
+}
+
+model Payment {
+  id               String         @id @default(uuid()) @db.Uuid
+  userId           String         @db.Uuid
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId         String?        @db.Uuid
+  course           Course?        @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  gateway          PaymentGateway
+  gatewayOrderId   String?        @unique
+  gatewayPaymentId String?        @unique
+  amount           Int
+  currency         String         @default("USD")
+  status           PaymentStatus  @default(PENDING)
+  metadata         Json?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([status])
+  @@index([gateway])
+  @@index([courseId])
+}
+
+enum PaymentGateway {
+  STRIPE
+  RAZORPAY
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+  CANCELLED
 }
 
 enum AIMessageRole {

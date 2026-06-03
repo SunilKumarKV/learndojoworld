@@ -1,5 +1,7 @@
 "use client";
 
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
@@ -7,7 +9,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useCourseDetail } from "@/features/courses/hooks/use-course-detail";
 import { useEnrollCourse } from "@/features/learning/hooks/use-my-learning";
 import { getEnrollmentStatus } from "@/services/enrollment.api";
-import { useQuery } from "@tanstack/react-query";
+import { createCheckoutSession } from "@/services/payments.api";
 
 export default function CourseDetailPage() {
   const params = useParams<{ slug: string }>();
@@ -15,6 +17,32 @@ export default function CourseDetailPage() {
   const router = useRouter();
   const { data: course, isLoading, isError, error } = useCourseDetail(slug);
   const { mutate: enroll, isPending } = useEnrollCourse();
+  const [checkoutMessage, setCheckoutMessage] = useState("");
+
+  const checkoutMutation = useMutation({
+    mutationFn: async (gateway: "stripe" | "razorpay") => {
+      return createCheckoutSession(course!.id, gateway);
+    },
+    onSuccess: (session) => {
+      setCheckoutMessage("");
+      if (session.gateway === "stripe" && session.checkoutUrl) {
+        window.location.href = session.checkoutUrl;
+      } else if (session.gateway === "razorpay") {
+        setCheckoutMessage(
+          session.providerConfigured
+            ? "Razorpay order created. Checkout widget integration is ready for the next frontend step."
+            : "Pending payment created. Razorpay keys are not configured locally.",
+        );
+      } else {
+        setCheckoutMessage("Pending payment created. Stripe keys are not configured locally.");
+      }
+    },
+    onError: (checkoutError) => {
+      setCheckoutMessage(
+        checkoutError instanceof Error ? checkoutError.message : "Unable to start checkout.",
+      );
+    },
+  });
 
   const { data: enrollmentStatus } = useQuery({
     enabled: Boolean(course?.id),
@@ -126,20 +154,54 @@ export default function CourseDetailPage() {
               <h2 className="text-xl font-semibold text-slate-950">Start learning</h2>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm text-slate-600">
-                Free courses enroll immediately in this foundation release.
-              </p>
-              <Button
-                className="w-full"
-                disabled={isPending || enrollmentStatus?.enrolled}
-                onClick={() => enroll(course.id)}
-              >
-                {enrollmentStatus?.enrolled
-                  ? "Already enrolled"
-                  : course.isFree
-                    ? "Enroll for free"
-                    : "Enroll"}
-              </Button>
+              {course.isFree ? (
+                <>
+                  <p className="text-sm text-slate-600">
+                    This is a free course. Enroll immediately to start learning.
+                  </p>
+                  <Button
+                    className="w-full"
+                    disabled={isPending || enrollmentStatus?.enrolled}
+                    onClick={() => enroll(course.id)}
+                  >
+                    {enrollmentStatus?.enrolled ? "Already enrolled" : "Enroll for free"}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <div className="rounded-2xl bg-slate-100 p-4">
+                    <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Price</p>
+                    <p className="mt-2 text-3xl font-bold text-slate-950">
+                      {formatCoursePrice(course.price, course.currency)}
+                    </p>
+                  </div>
+                  <p className="text-sm text-slate-600">
+                    Unlock full access to all lessons and materials.
+                  </p>
+                  <div className="space-y-2">
+                    <Button
+                      className="w-full"
+                      disabled={checkoutMutation.status === "pending" || enrollmentStatus?.enrolled}
+                      onClick={() => checkoutMutation.mutate("stripe")}
+                    >
+                      {enrollmentStatus?.enrolled ? "Already enrolled" : "Pay with Stripe"}
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      className="w-full"
+                      disabled={checkoutMutation.status === "pending" || enrollmentStatus?.enrolled}
+                      onClick={() => checkoutMutation.mutate("razorpay")}
+                    >
+                      Pay with Razorpay
+                    </Button>
+                  </div>
+                  {checkoutMessage ? (
+                    <p className="rounded-2xl bg-slate-100 px-4 py-3 text-sm text-slate-700">
+                      {checkoutMessage}
+                    </p>
+                  ) : null}
+                </>
+              )}
               <p className="text-xs text-slate-500">
                 Status: {enrollmentStatus?.enrolled ? "You are enrolled" : "Not enrolled yet"}
               </p>
@@ -173,7 +235,9 @@ export default function CourseDetailPage() {
             <CardContent className="space-y-3 text-sm text-slate-700">
               <p>Difficulty: {course.difficulty}</p>
               <p>Language: {course.language}</p>
-              <p>Price: {course.isFree ? "Free" : `${course.price} ${course.currency}`}</p>
+              <p>
+                Price: {course.isFree ? "Free" : formatCoursePrice(course.price, course.currency)}
+              </p>
               <p>
                 Preview lessons:{" "}
                 {
@@ -188,4 +252,12 @@ export default function CourseDetailPage() {
       </div>
     </main>
   );
+}
+
+function formatCoursePrice(price: number | null, currency: string) {
+  if (!price || price <= 0) {
+    return "Free";
+  }
+
+  return `${Number(price).toFixed(2)} ${currency}`;
 }

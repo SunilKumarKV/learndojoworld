@@ -13,6 +13,12 @@ export type EnvironmentVariables = {
   AI_PROVIDER: string;
   AI_PRIMARY_PROVIDER: string | undefined;
   AI_FALLBACK_PROVIDER: string | undefined;
+  STRIPE_SECRET_KEY: string | undefined;
+  STRIPE_WEBHOOK_SECRET: string | undefined;
+  RAZORPAY_KEY_ID: string | undefined;
+  RAZORPAY_KEY_SECRET: string | undefined;
+  RAZORPAY_WEBHOOK_SECRET: string | undefined;
+  NEXT_PUBLIC_RAZORPAY_KEY_ID: string | undefined;
 };
 
 const DEFAULTS = {
@@ -46,6 +52,12 @@ export function validateEnvironment(config: Record<string, unknown>): Environmen
     AI_PROVIDER: readString(config.AI_PROVIDER) || DEFAULTS.AI_PROVIDER,
     AI_PRIMARY_PROVIDER: readString(config.AI_PRIMARY_PROVIDER) || undefined,
     AI_FALLBACK_PROVIDER: readString(config.AI_FALLBACK_PROVIDER) || undefined,
+    STRIPE_SECRET_KEY: readString(config.STRIPE_SECRET_KEY) || undefined,
+    STRIPE_WEBHOOK_SECRET: readString(config.STRIPE_WEBHOOK_SECRET) || undefined,
+    RAZORPAY_KEY_ID: readString(config.RAZORPAY_KEY_ID) || undefined,
+    RAZORPAY_KEY_SECRET: readString(config.RAZORPAY_KEY_SECRET) || undefined,
+    RAZORPAY_WEBHOOK_SECRET: readString(config.RAZORPAY_WEBHOOK_SECRET) || undefined,
+    NEXT_PUBLIC_RAZORPAY_KEY_ID: readString(config.NEXT_PUBLIC_RAZORPAY_KEY_ID) || undefined,
   };
 }
 
