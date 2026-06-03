@@ -451,10 +451,31 @@ type CreatorCourseWithDetails = Prisma.CourseGetPayload<{
 }>;
 
 function slugify(value: string) {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 80);
+  const normalized = value.trim().toLowerCase().normalize("NFKD").slice(0, 120);
+
+  const chars: string[] = [];
+  let previousWasHyphen = false;
+
+  for (const char of normalized) {
+    const code = char.charCodeAt(0);
+    const isLowercaseLetter = code >= 97 && code <= 122;
+    const isDigit = code >= 48 && code <= 57;
+
+    if (isLowercaseLetter || isDigit) {
+      chars.push(char);
+      previousWasHyphen = false;
+      continue;
+    }
+
+    if (!previousWasHyphen && chars.length > 0) {
+      chars.push("-");
+      previousWasHyphen = true;
+    }
+  }
+
+  if (chars[chars.length - 1] === "-") {
+    chars.pop();
+  }
+
+  return chars.join("");
 }
