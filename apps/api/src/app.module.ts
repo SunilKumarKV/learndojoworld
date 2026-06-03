@@ -7,6 +7,7 @@ import { ActivityModule } from "./modules/activity/activity.module";
 import { AIModule } from "./modules/ai/ai.module";
 import { AnalyticsModule } from "./modules/analytics/analytics.module";
 import { AuthModule } from "./modules/auth/auth.module";
+import { AdminModule } from "./modules/admin/admin.module";
 import { CoursesModule } from "./modules/courses/courses.module";
 import { CreatorsModule } from "./modules/creators/creators.module";
 import { DashboardModule } from "./modules/dashboard/dashboard.module";
@@ -28,6 +29,7 @@ import { UsersModule } from "./modules/users/users.module";
     }),
     PrismaModule,
     AuthModule,
+    AdminModule,
     CoursesModule,
     CreatorsModule,
     DashboardModule,

@@ -66,7 +66,7 @@ export type CreatorCourse = {
   updatedAt: string;
 };
 
-export type CourseStatus = "DRAFT" | "PENDING_REVIEW" | "PUBLISHED" | "ARCHIVED";
+export type CourseStatus = "DRAFT" | "PENDING_REVIEW" | "PUBLISHED" | "REJECTED" | "ARCHIVED";
 
 export type CreatorLessonType = "TEXT" | "VIDEO" | "ARTICLE" | "EXERCISE";
 
