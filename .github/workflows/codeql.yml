@@ -55,9 +55,35 @@ jobs:
         # see https://docs.github.com/en/code-security/code-scanning/creating-an-advanced-setup-for-code-scanning/customizing-your-advanced-setup-for-code-scanning.
         # If you are analyzing a compiled language, you can modify the 'build-mode' for that language to customize how
         # your codebase is analyzed, see https://docs.github.com/en/code-security/code-scanning/creating-an-advanced-setup-for-code-scanning/codeql-code-scanning-for-compiled-languages
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/learndojoworld?schema=public
+      JWT_SECRET: ci_jwt_secret
+      JWT_REFRESH_SECRET: ci_refresh_secret
+      NEXT_PUBLIC_API_URL: http://localhost:4000/api/v1
+      AI_PRIMARY_PROVIDER: gemini
+      AI_FALLBACK_PROVIDER: openai
+      GEMINI_API_KEY: dummy
+      OPENAI_API_KEY: dummy
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.20.2
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: pnpm exec prisma generate
 
       # Add any setup steps before running the `github/codeql-action/init` action.
       # This includes steps like installing compilers or runtimes (`actions/setup-node`

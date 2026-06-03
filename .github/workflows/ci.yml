@@ -13,6 +13,15 @@ jobs:
   quality:
     name: Quality
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/learndojoworld?schema=public
+      JWT_SECRET: ci_jwt_secret
+      JWT_REFRESH_SECRET: ci_refresh_secret
+      NEXT_PUBLIC_API_URL: http://localhost:4000/api/v1
+      AI_PRIMARY_PROVIDER: gemini
+      AI_FALLBACK_PROVIDER: openai
+      GEMINI_API_KEY: dummy
+      OPENAI_API_KEY: dummy
 
     steps:
       - name: Checkout
@@ -26,7 +35,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 20.20.2
           cache: pnpm
 
       - name: Install dependencies
@@ -34,6 +43,9 @@ jobs:
 
       - name: Generate Prisma Client
         run: pnpm exec prisma generate
+
+      - name: Format check
+        run: pnpm format:check
 
       - name: Lint
         run: pnpm lint
