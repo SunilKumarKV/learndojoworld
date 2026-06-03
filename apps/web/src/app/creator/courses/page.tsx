@@ -10,6 +10,8 @@ import { useCreatorCourses } from "@/features/creator/hooks/use-creator";
 import { ErrorState } from "@/features/dashboard/components/error-state";
 import { LoadingState } from "@/features/dashboard/components/loading-state";
 
+const newCourseRoute = "/creator/courses/new" as Route;
+
 export default function CreatorCoursesPage() {
   const { data: courses = [], error, isError, isLoading } = useCreatorCourses();
 
@@ -35,7 +37,7 @@ export default function CreatorCoursesPage() {
           </p>
         </div>
         <Button asChild>
-          <Link href="/creator/courses/new">
+          <Link href={newCourseRoute}>
             <Plus aria-hidden className="h-4 w-4" />
             New course
           </Link>
@@ -56,7 +58,7 @@ export default function CreatorCoursesPage() {
               </p>
             </div>
             <Button asChild variant="secondary">
-              <Link href="/creator/courses/new">
+              <Link href={newCourseRoute}>
                 <Plus aria-hidden className="h-4 w-4" />
                 Create first course
               </Link>

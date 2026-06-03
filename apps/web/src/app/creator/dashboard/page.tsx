@@ -1,6 +1,7 @@
 "use client";
 
 import { BookOpen, IndianRupee, Plus, Star, Users } from "lucide-react";
+import type { Route } from "next";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -10,6 +11,8 @@ import { CreatorStatCard } from "@/features/creator/components/creator-stat-card
 import { useCreatorDashboard } from "@/features/creator/hooks/use-creator";
 import { ErrorState } from "@/features/dashboard/components/error-state";
 import { LoadingState } from "@/features/dashboard/components/loading-state";
+
+const newCourseRoute = "/creator/courses/new" as Route;
 
 export default function CreatorDashboardPage() {
   const router = useRouter();
@@ -48,7 +51,7 @@ export default function CreatorDashboardPage() {
             </p>
           </div>
           <Button asChild variant="secondary">
-            <Link href="/creator/courses/new">
+            <Link href={newCourseRoute}>
               <Plus aria-hidden className="h-4 w-4" />
               Create course
             </Link>
@@ -94,7 +97,7 @@ export default function CreatorDashboardPage() {
           <p className="text-sm leading-6 text-slate-600">
             Start a draft, add curriculum, and submit it for review when the foundation is ready.
           </p>
-          <Button className="mt-5" onClick={() => router.push("/creator/courses/new")}>
+          <Button className="mt-5" onClick={() => router.push(newCourseRoute)}>
             Create course
           </Button>
         </CardContent>
