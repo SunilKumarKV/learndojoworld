@@ -19,6 +19,12 @@ type LearnerDashboardResponse = {
     dailyGoalMin: number;
     todayLearningMin: number;
   };
+  aiUsage: {
+    messagesToday: number;
+    remainingToday: number;
+    dailyLimit: number;
+    costToday: number;
+  };
   continueLearning: null | {
     courseId: string;
     courseTitle: string;
@@ -67,6 +73,18 @@ export class DashboardService {
     const fullName =
       profile?.user?.name ?? profile?.displayName ?? profile?.user?.username ?? "Learner";
 
+    const now = new Date();
+    const startOfDay = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+    );
+    const messagesToday = await this.prisma.aIMessage.count({
+      where: { userId, createdAt: { gte: startOfDay } },
+    });
+    const costSum = await this.prisma.aIMessage.aggregate({
+      _sum: { cost: true },
+      where: { userId, createdAt: { gte: startOfDay } },
+    });
+
     return {
       profile: {
         dailyGoalMin,
@@ -83,6 +101,12 @@ export class DashboardService {
         enrolledCourses: 0,
         todayLearningMin: 0,
         xp: 0,
+      },
+      aiUsage: {
+        messagesToday,
+        remainingToday: Math.max(0, 20 - messagesToday),
+        dailyLimit: 20,
+        costToday: Number(costSum._sum.cost ?? 0),
       },
       continueLearning: null,
       recommendations: this.buildRecommendations(goals, topics),

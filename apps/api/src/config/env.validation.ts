@@ -4,14 +4,22 @@ export type EnvironmentVariables = {
   JWT_REFRESH_SECRET: string;
   JWT_SECRET: string;
   NODE_ENV: string;
-  REDIS_URL: string;
+  REDIS_URL?: string;
   WEB_ORIGIN: string;
+  OPENAI_API_KEY: string | undefined;
+  OPENAI_MODEL: string | undefined;
+  GEMINI_API_KEY: string | undefined;
+  GEMINI_MODEL: string | undefined;
+  AI_PROVIDER: string;
+  AI_PRIMARY_PROVIDER: string | undefined;
+  AI_FALLBACK_PROVIDER: string | undefined;
 };
 
 const DEFAULTS = {
   API_PORT: 4000,
   NODE_ENV: "development",
   WEB_ORIGIN: "http://localhost:3000",
+  AI_PROVIDER: "OPENAI",
 } as const;
 
 const REQUIRED_KEYS = ["DATABASE_URL", "REDIS_URL", "JWT_SECRET", "JWT_REFRESH_SECRET"] as const;
@@ -31,6 +39,13 @@ export function validateEnvironment(config: Record<string, unknown>): Environmen
     NODE_ENV: readString(config.NODE_ENV) || DEFAULTS.NODE_ENV,
     REDIS_URL: readString(config.REDIS_URL),
     WEB_ORIGIN: readString(config.WEB_ORIGIN) || DEFAULTS.WEB_ORIGIN,
+    OPENAI_API_KEY: readString(config.OPENAI_API_KEY) || undefined,
+    OPENAI_MODEL: readString(config.OPENAI_MODEL) || undefined,
+    GEMINI_API_KEY: readString(config.GEMINI_API_KEY) || undefined,
+    GEMINI_MODEL: readString(config.GEMINI_MODEL) || undefined,
+    AI_PROVIDER: readString(config.AI_PROVIDER) || DEFAULTS.AI_PROVIDER,
+    AI_PRIMARY_PROVIDER: readString(config.AI_PRIMARY_PROVIDER) || undefined,
+    AI_FALLBACK_PROVIDER: readString(config.AI_FALLBACK_PROVIDER) || undefined,
   };
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -12,6 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 export default function CourseDetailPage() {
   const params = useParams<{ slug: string }>();
   const slug = params?.slug ?? "";
+  const router = useRouter();
   const { data: course, isLoading, isError, error } = useCourseDetail(slug);
   const { mutate: enroll, isPending } = useEnrollCourse();
 
@@ -86,18 +87,29 @@ export default function CourseDetailPage() {
                         key={lesson.id}
                         className="rounded-2xl border border-slate-200 bg-white p-4"
                       >
-                        <div className="flex items-center justify-between gap-3">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                           <div>
                             <p className="text-sm font-semibold text-slate-900">{lesson.title}</p>
                             <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
                               {lesson.type}
                             </p>
                           </div>
-                          {lesson.isPreview ? (
-                            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs text-emerald-700">
-                              Preview
-                            </span>
-                          ) : null}
+                          <div className="flex items-center gap-2">
+                            {lesson.isPreview ? (
+                              <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs text-emerald-700">
+                                Preview
+                              </span>
+                            ) : null}
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() =>
+                                router.push(`/course/${course.slug}/lesson/${lesson.id}`)
+                              }
+                            >
+                              Open lesson
+                            </Button>
+                          </div>
                         </div>
                       </li>
                     ))}
@@ -131,6 +143,26 @@ export default function CourseDetailPage() {
               <p className="text-xs text-slate-500">
                 Status: {enrollmentStatus?.enrolled ? "You are enrolled" : "Not enrolled yet"}
               </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <h2 className="text-xl font-semibold text-slate-950">AI Tutor</h2>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-slate-600">
+                Ask the LearnDojoWorld Tutor for help using your course context.
+              </p>
+              <Button
+                className="w-full"
+                variant="secondary"
+                onClick={() =>
+                  window.location.assign(`/ai?courseId=${course.id}&courseSlug=${course.slug}`)
+                }
+              >
+                Ask AI Tutor
+              </Button>
             </CardContent>
           </Card>
 

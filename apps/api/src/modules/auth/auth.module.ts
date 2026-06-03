@@ -1,4 +1,4 @@
-import { Global, Module } from "@nestjs/common";
+import { forwardRef, Global, Module } from "@nestjs/common";
 import { JwtModule } from "@nestjs/jwt";
 
 import { AnalyticsModule } from "../analytics/analytics.module";
@@ -10,8 +10,8 @@ import { RolesGuard } from "./guards/roles.guard";
 @Global()
 @Module({
   controllers: [AuthController],
-  exports: [AuthService, JwtAuthGuard, RolesGuard],
-  imports: [AnalyticsModule, JwtModule.register({})],
+  exports: [AuthService, JwtAuthGuard, RolesGuard, JwtModule],
+  imports: [forwardRef(() => AnalyticsModule), JwtModule.register({})],
   providers: [AuthService, JwtAuthGuard, RolesGuard],
 })
 export class AuthModule {}

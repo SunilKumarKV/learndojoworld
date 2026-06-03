@@ -72,6 +72,12 @@ export default function DashboardPage() {
       skillLevel: "BEGINNER",
       topics: [],
     },
+    aiUsage: {
+      messagesToday: 0,
+      remainingToday: 20,
+      dailyLimit: 20,
+      costToday: 0,
+    },
     recommendations: [],
     roadmap: [],
     stats: {
@@ -156,6 +162,25 @@ export default function DashboardPage() {
               <p className="mt-2 text-xs uppercase tracking-[0.2em] text-primary">
                 {summary?.nextLevelProgress ?? 0}% to next level
               </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">AI Tutor</p>
+              <h2 className="mt-3 text-xl font-semibold text-slate-950">Tutor usage</h2>
+            </CardHeader>
+            <CardContent>
+              <p className="text-4xl font-semibold text-slate-950">
+                {dashboard.aiUsage.messagesToday}/{dashboard.aiUsage.dailyLimit}
+              </p>
+              <p className="mt-2 text-sm text-slate-600">AI chat messages used today</p>
+              <p className="mt-3 text-sm text-slate-600">
+                Estimated cost: ${dashboard.aiUsage.costToday.toFixed(4)}
+              </p>
+              <Button className="mt-4" variant="secondary" onClick={() => router.push("/ai")}>
+                Open AI Tutor
+              </Button>
             </CardContent>
           </Card>
 

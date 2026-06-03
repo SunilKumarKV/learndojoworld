@@ -1,4 +1,10 @@
-import { ConflictException, Injectable, UnauthorizedException } from "@nestjs/common";
+import {
+  ConflictException,
+  forwardRef,
+  Inject,
+  Injectable,
+  UnauthorizedException,
+} from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { compare, hash } from "bcrypt";
@@ -20,6 +26,7 @@ export class AuthService {
     private readonly configService: ConfigService<EnvironmentVariables, true>,
     private readonly jwtService: JwtService,
     private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => AnalyticsService))
     private readonly analyticsService: AnalyticsService,
   ) {}
 

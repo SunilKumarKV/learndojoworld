@@ -10,6 +10,15 @@ export type ApiResponse<T = unknown> = {
   errorCode: string | undefined;
 };
 
+type ApiErrorBody = {
+  error?: {
+    code?: string;
+    message?: string | string[];
+  };
+  errorCode?: string;
+  message?: string | string[];
+};
+
 export class ApiError extends Error {
   public readonly status: number;
   public readonly errorCode: string | undefined;
@@ -39,7 +48,19 @@ function getStoredTokens() {
 
 function normalizeApiResponse<T>(body: unknown): ApiResponse<T> {
   if (body && typeof body === "object" && "success" in body) {
-    return body as ApiResponse<T>;
+    const typedBody = body as ApiResponse<T> & ApiErrorBody;
+    const errorMessage = Array.isArray(typedBody.error?.message)
+      ? typedBody.error.message.join(", ")
+      : typedBody.error?.message;
+    const message = Array.isArray(typedBody.message)
+      ? typedBody.message.join(", ")
+      : (typedBody.message ?? errorMessage ?? "");
+
+    return {
+      ...typedBody,
+      message,
+      errorCode: typedBody.errorCode ?? typedBody.error?.code,
+    };
   }
 
   return {
@@ -84,7 +105,7 @@ export async function apiClient<T>(path: string, options: RequestInit = {}) {
     const message =
       normalized.message ||
       (body && typeof body === "object" && "message" in body
-        ? String((body as Record<string, unknown>).message)
+        ? String((body as ApiErrorBody).message)
         : response.statusText);
 
     throw new ApiError(message || "Request failed", response.status, normalized.errorCode);

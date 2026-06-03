@@ -40,9 +40,17 @@ export type RecommendationItem = {
   type: string;
 };
 
+export type AiUsage = {
+  messagesToday: number;
+  remainingToday: number;
+  dailyLimit: number;
+  costToday: number;
+};
+
 export type DashboardLearnerResponse = {
   profile: DashboardLearnerProfile;
   stats: DashboardLearnerStats;
+  aiUsage: AiUsage;
   continueLearning: ContinueLearningItem;
   roadmap: RoadmapItem[];
   recommendations: RecommendationItem[];
