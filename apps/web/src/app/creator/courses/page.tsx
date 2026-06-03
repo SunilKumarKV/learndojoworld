@@ -1,6 +1,8 @@
 "use client";
 
-import { BookOpen, Clock } from "lucide-react";
+import { BookOpen, Edit3, Eye, Plus } from "lucide-react";
+import type { Route } from "next";
+import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -20,17 +22,24 @@ export default function CreatorCoursesPage() {
 
   return (
     <div className="space-y-8">
-      <section>
-        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">
-          Creator courses
-        </p>
-        <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">
-          Course list foundation
-        </h2>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-          This page lists courses owned by your creator account. Builder and publishing workflows
-          are intentionally coming later.
-        </p>
+      <section className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">
+            Creator courses
+          </p>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">
+            Manage your courses
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+            Create drafts, build curriculum, preview learner-facing content, and submit for review.
+          </p>
+        </div>
+        <Button asChild>
+          <Link href="/creator/courses/new">
+            <Plus aria-hidden className="h-4 w-4" />
+            New course
+          </Link>
+        </Button>
       </section>
 
       {courses.length === 0 ? (
@@ -42,13 +51,15 @@ export default function CreatorCoursesPage() {
               </div>
               <h3 className="text-xl font-semibold text-slate-950">No creator courses yet</h3>
               <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">
-                The course builder is not enabled. When it lands, your drafts and published courses
-                will appear here.
+                Start with a draft course, add a module and a text lesson, then submit it for review
+                when it is ready.
               </p>
             </div>
-            <Button disabled type="button" variant="secondary">
-              <Clock aria-hidden className="h-4 w-4" />
-              Course builder coming soon
+            <Button asChild variant="secondary">
+              <Link href="/creator/courses/new">
+                <Plus aria-hidden className="h-4 w-4" />
+                Create first course
+              </Link>
             </Button>
           </CardContent>
         </Card>
@@ -63,12 +74,27 @@ export default function CreatorCoursesPage() {
                   </p>
                   <h3 className="mt-2 text-lg font-semibold text-slate-950">{course.title}</h3>
                   <p className="mt-1 text-sm text-slate-600">
-                    {course.moduleCount} modules · {course.enrollmentCount} learners
+                    {course.moduleCount} modules · {course.enrollmentCount} learners ·{" "}
+                    {course.category?.name ?? "No category"}
                   </p>
                 </div>
-                <span className="rounded-md bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-700">
-                  {course.difficulty}
-                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-md bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-700">
+                    {course.difficulty}
+                  </span>
+                  <Button asChild size="sm" variant="secondary">
+                    <Link href={`/creator/courses/${course.id}/edit` as Route}>
+                      <Edit3 aria-hidden className="h-4 w-4" />
+                      Edit
+                    </Link>
+                  </Button>
+                  <Button asChild size="sm" variant="ghost">
+                    <Link href={`/creator/courses/${course.id}/preview` as Route}>
+                      <Eye aria-hidden className="h-4 w-4" />
+                      Preview
+                    </Link>
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}

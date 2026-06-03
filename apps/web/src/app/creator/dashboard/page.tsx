@@ -1,6 +1,7 @@
 "use client";
 
-import { BookOpen, IndianRupee, Star, Users } from "lucide-react";
+import { BookOpen, IndianRupee, Plus, Star, Users } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
@@ -46,8 +47,11 @@ export default function CreatorDashboardPage() {
               marketplace foundation without fake monetization.
             </p>
           </div>
-          <Button disabled type="button" variant="secondary">
-            Create course coming soon
+          <Button asChild variant="secondary">
+            <Link href="/creator/courses/new">
+              <Plus aria-hidden className="h-4 w-4" />
+              Create course
+            </Link>
           </Button>
         </div>
       </section>
@@ -84,14 +88,14 @@ export default function CreatorDashboardPage() {
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
             Next action
           </p>
-          <h2 className="text-xl font-semibold text-slate-950">Prepare your creator profile</h2>
+          <h2 className="text-xl font-semibold text-slate-950">Create your first course</h2>
         </CardHeader>
         <CardContent>
           <p className="text-sm leading-6 text-slate-600">
-            Keep your bio and expertise sharp while the course builder is being built.
+            Start a draft, add curriculum, and submit it for review when the foundation is ready.
           </p>
-          <Button className="mt-5" onClick={() => router.push("/creator/settings")}>
-            Edit creator profile
+          <Button className="mt-5" onClick={() => router.push("/creator/courses/new")}>
+            Create course
           </Button>
         </CardContent>
       </Card>

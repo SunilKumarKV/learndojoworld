@@ -21,11 +21,13 @@ enum Difficulty {
 
 enum CourseStatus {
   DRAFT
+  PENDING_REVIEW
   PUBLISHED
   ARCHIVED
 }
 
 enum LessonType {
+  TEXT
   VIDEO
   ARTICLE
   EXERCISE

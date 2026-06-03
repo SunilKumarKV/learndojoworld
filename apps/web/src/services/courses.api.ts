@@ -56,7 +56,7 @@ export type CourseDetail = {
       id: string;
       title: string;
       slug: string;
-      type: "VIDEO" | "ARTICLE" | "EXERCISE";
+      type: "TEXT" | "VIDEO" | "ARTICLE" | "EXERCISE";
       order: number;
       content: string;
       videoUrl: string | null;
