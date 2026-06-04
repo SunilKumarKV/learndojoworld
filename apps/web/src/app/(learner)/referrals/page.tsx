@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { referralsApi } from "@/services/referrals.api";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Copy, Check, Users, Clock } from "lucide-react";
+import { Copy, Check, Users, Clock, Gift } from "lucide-react";
 import { LoadingState } from "@/features/dashboard/components/loading-state";
 import { ErrorState } from "@/features/dashboard/components/error-state";
 
@@ -73,7 +73,7 @@ export default function ReferralsPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Referrals & Rewards</h1>
         <p className="text-muted-foreground mt-2">
-          Invite friends to LearnDojoWorld and earn rewards when they start learning.
+          Invite friends to LearnDojoWorld and earn free Pro time when they start learning.
         </p>
       </div>
 
@@ -121,7 +121,7 @@ export default function ReferralsPage() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-6">
         <Card className="p-6 flex items-center gap-4">
           <div className="p-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full">
             <Users className="w-6 h-6" />
@@ -149,35 +149,55 @@ export default function ReferralsPage() {
             <p className="text-2xl font-bold">{me.pendingReferrals}</p>
           </div>
         </Card>
+        <Card className="p-6 flex items-center gap-4">
+          <div className="p-3 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full">
+            <Gift className="w-6 h-6" />
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground font-medium">Rewards</p>
+            <p className="text-2xl font-bold">{me.pendingRewards + me.grantedRewards}</p>
+          </div>
+        </Card>
       </div>
 
       <Card className="p-6">
-        <h2 className="text-xl font-semibold mb-4">Recent Referrals</h2>
-        {!stats?.recentEvents || stats.recentEvents.length === 0 ? (
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">My Rewards</h2>
+          <p className="text-xs text-muted-foreground max-w-xs text-right hidden sm:block">
+            Rewards require admin approval before activation. Pro time will be added automatically
+            once approved.
+          </p>
+        </div>
+        {!stats?.myRewards || stats.myRewards.length === 0 ? (
           <p className="text-muted-foreground text-sm py-8 text-center bg-muted/20 rounded-lg">
-            You haven't referred anyone yet. Share your link to get started!
+            No rewards yet. Share your link to start earning!
           </p>
         ) : (
           <div className="divide-y">
-            {stats.recentEvents.map((event) => (
-              <div key={event.id} className="py-4 flex justify-between items-center">
+            {stats.myRewards.map((reward) => (
+              <div key={reward.id} className="py-4 flex justify-between items-center">
                 <div>
-                  <p className="font-medium">{event.invitedUser}</p>
+                  <p className="font-medium">
+                    {reward.rewardValue} Days {reward.rewardType.replace(/_/g, " ")}
+                  </p>
                   <p className="text-xs text-muted-foreground">
-                    {new Date(event.createdAt).toLocaleDateString()}
+                    via {reward.relatedUser} ({reward.role}) •{" "}
+                    {new Date(reward.createdAt).toLocaleDateString()}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <span
                     className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      event.status === "COMPLETED"
+                      reward.status === "GRANTED"
                         ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                        : event.status === "PENDING"
-                          ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-                          : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                        : reward.status === "APPROVED"
+                          ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                          : reward.status === "PENDING"
+                            ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                            : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
                     }`}
                   >
-                    {event.status}
+                    {reward.status}
                   </span>
                 </div>
               </div>

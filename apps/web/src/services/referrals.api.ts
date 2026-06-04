@@ -6,14 +6,25 @@ export interface ReferralMeResponse {
   totalInvites: number;
   successfulReferrals: number;
   pendingReferrals: number;
+  pendingRewards: number;
+  grantedRewards: number;
 }
 
 export interface ReferralEvent {
   id: string;
   invitedUser: string;
   status: "PENDING" | "COMPLETED" | "REJECTED";
-  rewardStatus: string | null;
   createdAt: string;
+}
+
+export interface ReferralRewardItem {
+  id: string;
+  rewardType: string;
+  rewardValue: string;
+  status: "PENDING" | "APPROVED" | "GRANTED" | "REJECTED";
+  createdAt: string;
+  relatedUser: string;
+  role: "Inviter" | "Invitee";
 }
 
 export interface ReferralStatsResponse {
@@ -21,6 +32,7 @@ export interface ReferralStatsResponse {
     totalGrantedRewards: number;
   };
   recentEvents: ReferralEvent[];
+  myRewards: ReferralRewardItem[];
 }
 
 export const referralsApi = {

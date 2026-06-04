@@ -657,7 +657,7 @@ model ReferralEvent {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  reward ReferralReward?
+  reward ReferralReward[]
 
   @@index([inviterUserId, status])
   @@index([invitedUserId])
@@ -670,7 +670,7 @@ model ReferralReward {
   userId String @db.Uuid
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  referralEventId String        @unique @db.Uuid
+  referralEventId String        @db.Uuid
   referralEvent   ReferralEvent @relation(fields: [referralEventId], references: [id], onDelete: Cascade)
 
   rewardType  String

@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, ConflictException } from "@nestjs/common";
 import { PrismaService } from "../../lib/prisma/prisma.service";
-import { ReferralStatus } from "@prisma/client";
+import { ReferralStatus, RewardStatus } from "@prisma/client";
 import { randomBytes } from "crypto";
 
 @Injectable()
@@ -19,10 +19,7 @@ export class ReferralsService {
     if (!referralCode) {
       try {
         referralCode = await this.prisma.referralCode.create({
-          data: {
-            userId,
-            code: this.generateUniqueCode(),
-          },
+          data: { userId, code: this.generateUniqueCode() },
         });
       } catch (_error) {
         referralCode = await this.prisma.referralCode.create({
@@ -31,18 +28,31 @@ export class ReferralsService {
       }
     }
 
-    const eventCounts = await this.prisma.referralEvent.groupBy({
-      by: ["status"],
-      where: { inviterUserId: userId },
-      _count: { id: true },
-    });
+    const [eventCounts, rewardCounts] = await Promise.all([
+      this.prisma.referralEvent.groupBy({
+        by: ["status"],
+        where: { inviterUserId: userId },
+        _count: { id: true },
+      }),
+      this.prisma.referralReward.groupBy({
+        by: ["status"],
+        where: { userId },
+        _count: { id: true },
+      }),
+    ]);
 
     let pendingReferrals = 0;
     let successfulReferrals = 0;
-
     eventCounts.forEach((group) => {
       if (group.status === ReferralStatus.PENDING) pendingReferrals = group._count.id;
       if (group.status === ReferralStatus.COMPLETED) successfulReferrals = group._count.id;
+    });
+
+    let pendingRewards = 0;
+    let grantedRewards = 0;
+    rewardCounts.forEach((group) => {
+      if (group.status === RewardStatus.PENDING) pendingRewards = group._count.id;
+      if (group.status === RewardStatus.GRANTED) grantedRewards = group._count.id;
     });
 
     return {
@@ -51,36 +61,60 @@ export class ReferralsService {
       totalInvites: pendingReferrals + successfulReferrals,
       successfulReferrals,
       pendingReferrals,
+      pendingRewards,
+      grantedRewards,
     };
   }
 
   async getStats(userId: string) {
-    const [events, rewardsCount] = await Promise.all([
+    const [events, rewards] = await Promise.all([
       this.prisma.referralEvent.findMany({
         where: { inviterUserId: userId },
         take: 10,
         orderBy: { createdAt: "desc" },
-        include: {
-          invited: { select: { name: true, username: true } },
-          reward: { select: { status: true, rewardValue: true } },
-        },
+        include: { invited: { select: { name: true, username: true } } },
       }),
-      this.prisma.referralReward.count({
-        where: { userId, status: "GRANTED" },
+      this.prisma.referralReward.findMany({
+        where: { userId },
+        take: 20,
+        orderBy: { createdAt: "desc" },
+        include: {
+          referralEvent: {
+            include: {
+              inviter: { select: { name: true, username: true } },
+              invited: { select: { name: true, username: true } },
+            },
+          },
+        },
       }),
     ]);
 
     return {
       metrics: {
-        totalGrantedRewards: rewardsCount,
+        totalGrantedRewards: rewards.filter((r) => r.status === RewardStatus.GRANTED).length,
       },
       recentEvents: events.map((e) => ({
         id: e.id,
         invitedUser: e.invited.name || e.invited.username,
         status: e.status,
-        rewardStatus: e.reward?.status || null,
         createdAt: e.createdAt,
       })),
+      myRewards: rewards.map((r) => {
+        const isInviter = r.referralEvent.inviterUserId === userId;
+        const relatedUser = isInviter
+          ? r.referralEvent.invited.name || r.referralEvent.invited.username
+          : r.referralEvent.inviter.name || r.referralEvent.inviter.username;
+
+        return {
+          id: r.id,
+          rewardType: r.rewardType,
+          rewardValue: r.rewardValue,
+          status: r.status,
+          createdAt: r.createdAt,
+          relatedUser: relatedUser || "Unknown User",
+          role: isInviter ? "Inviter" : "Invitee",
+        };
+      }),
     };
   }
 
@@ -102,6 +136,7 @@ export class ReferralsService {
         where: { invitedUserId: userId },
       });
 
+      // Database-level duplicate protection check
       if (existingEvent) {
         throw new ConflictException("You have already applied a referral code.");
       }
@@ -113,6 +148,26 @@ export class ReferralsService {
           referralCodeId: code.id,
           status: ReferralStatus.PENDING,
         },
+      });
+
+      // Reward Creation Logic: Create 7 Days Pro pending rewards for both sides
+      await tx.referralReward.createMany({
+        data: [
+          {
+            userId: code.userId,
+            referralEventId: newEvent.id,
+            rewardType: "PRO_7_DAYS",
+            rewardValue: "7",
+            status: RewardStatus.PENDING,
+          },
+          {
+            userId: userId,
+            referralEventId: newEvent.id,
+            rewardType: "PRO_7_DAYS",
+            rewardValue: "7",
+            status: RewardStatus.PENDING,
+          },
+        ],
       });
 
       return {
