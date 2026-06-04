@@ -2,7 +2,6 @@
 
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import type { Route } from "next";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 
@@ -97,7 +96,7 @@ export function CourseDetailClient() {
                   Created by{" "}
                   <Link
                     className="font-semibold text-primary hover:underline"
-                    href={`/creator/${course.creator.username}` as Route}
+                    href={`/creator/${course.creator.username}`}
                   >
                     {course.creator.displayName}
                   </Link>

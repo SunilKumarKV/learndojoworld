@@ -11,7 +11,6 @@ import {
   Send,
   Trash2,
 } from "lucide-react";
-import type { Route } from "next";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -93,7 +92,7 @@ export function CourseBuilder({ courseId }: CourseBuilderProps) {
       } else {
         const created = await mutations.createCourse.mutateAsync(payload);
         setSuccessMessage("Course created.");
-        router.replace(`/creator/courses/${created.id}/edit` as Route);
+        router.replace(`/creator/courses/${created.id}/edit`);
         setStep("curriculum");
       }
     } catch (error) {
@@ -142,7 +141,7 @@ export function CourseBuilder({ courseId }: CourseBuilderProps) {
           </div>
           {course ? (
             <Button asChild variant="secondary">
-              <Link href={`/creator/courses/${course.id}/preview` as Route}>
+              <Link href={`/creator/courses/${course.id}/preview`}>
                 <Eye aria-hidden className="h-4 w-4" />
                 Preview
               </Link>

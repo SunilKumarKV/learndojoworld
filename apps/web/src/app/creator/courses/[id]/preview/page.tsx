@@ -1,7 +1,6 @@
 "use client";
 
 import { ArrowLeft, FileText } from "lucide-react";
-import type { Route } from "next";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
@@ -27,7 +26,7 @@ export default function CreatorCoursePreviewPage() {
     <div className="space-y-8">
       <section className="rounded-lg border border-slate-200 bg-white p-8 shadow-soft-xl">
         <Button asChild size="sm" variant="secondary">
-          <Link href={`/creator/courses/${course.id}/edit` as Route}>
+          <Link href={`/creator/courses/${course.id}/edit`}>
             <ArrowLeft aria-hidden className="h-4 w-4" />
             Edit course
           </Link>

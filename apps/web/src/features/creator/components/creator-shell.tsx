@@ -9,7 +9,11 @@ import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-const navItems = [
+const navItems: {
+  href: Route;
+  label: string;
+  icon: typeof LayoutDashboard;
+}[] = [
   { href: "/creator/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/creator/courses", label: "Courses", icon: BookOpen },
   { href: "/creator/revenue", label: "Revenue", icon: IndianRupee },
@@ -45,7 +49,7 @@ export function CreatorShell({ children }: { children: ReactNode }) {
                       ? "bg-primary text-white"
                       : "text-slate-700 hover:bg-slate-100 hover:text-slate-950",
                   )}
-                  href={item.href as Route}
+                  href={item.href}
                   key={item.href}
                 >
                   <Icon aria-hidden className="h-4 w-4" />
