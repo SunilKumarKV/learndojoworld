@@ -9,10 +9,16 @@ import { CreatorRevenueController } from "./creator-revenue.controller";
 import { CreatorRevenueService } from "./creator-revenue.service";
 import { CreatorsController } from "./creators.controller";
 import { CreatorsService } from "./creators.service";
+import { PublicCreatorsController } from "./public-creators.controller";
 
 @Module({
   imports: [PrismaModule, JwtModule, AuthModule],
-  controllers: [CreatorsController, CreatorCourseBuilderController, CreatorRevenueController],
+  controllers: [
+    CreatorsController,
+    CreatorCourseBuilderController,
+    CreatorRevenueController,
+    PublicCreatorsController,
+  ],
   providers: [CreatorsService, CreatorCourseBuilderService, CreatorRevenueService],
 })
 export class CreatorsModule {}

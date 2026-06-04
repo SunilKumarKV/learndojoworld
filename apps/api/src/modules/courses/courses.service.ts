@@ -66,6 +66,16 @@ export class CoursesService {
     const course = await this.prisma.course.findFirst({
       include: {
         category: true,
+        creator: {
+          include: {
+            creatorProfile: {
+              select: {
+                displayName: true,
+                id: true,
+              },
+            },
+          },
+        },
         modules: {
           include: {
             lessons: {
@@ -87,6 +97,16 @@ export class CoursesService {
 
     return {
       ...course,
+      creator: course.creator
+        ? {
+            displayName:
+              course.creator.creatorProfile?.displayName ??
+              course.creator.name ??
+              course.creator.username,
+            id: course.creator.id,
+            username: course.creator.username,
+          }
+        : null,
       price: course.price ? Number(course.price) : null,
     };
   }

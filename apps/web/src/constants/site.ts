@@ -1,11 +1,19 @@
 export const SITE_CONFIG = {
   name: "LearnDojoWorld",
-  description: "A startup-grade AI learning operating system for focused, adaptive learning.",
+  titleTemplate: "%s | LearnDojoWorld",
+  description:
+    "LearnDojoWorld combines AI tutoring, expert courses, a memory engine, and creator-powered learning paths for global learners.",
+  url: process.env.NEXT_PUBLIC_WEB_URL ?? "http://localhost:3000",
+  ogImage: "/opengraph-image.png",
   links: [
-    { label: "Memory", href: "#memory" },
-    { label: "Courses", href: "#courses" },
-    { label: "Creators", href: "#creators" },
+    { label: "Explore", href: "/explore" },
+    { label: "Pricing", href: "/pricing" },
+    { label: "Creators", href: "/become-creator" },
+    { label: "About", href: "/about" },
   ],
+  social: {
+    twitter: "@LearnDojoWorld",
+  },
 } as const;
 
 export const LEARNER_MODES = ["Builder", "Exam", "Career"] as const;

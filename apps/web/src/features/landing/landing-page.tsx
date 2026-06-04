@@ -1,22 +1,22 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
-import { ArrowRight, BrainCircuit, CheckCircle2, Compass, Layers3, Sparkles } from "lucide-react";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
+import {
+  ArrowRight,
+  BrainCircuit,
+  CheckCircle2,
+  Compass,
+  Layers3,
+  ReceiptText,
+  Sparkles,
+  Wallet,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { LEARNER_MODES, SITE_CONFIG } from "@/constants/site";
 import { cn } from "@/lib/utils";
 import { useLearningModeStore } from "@/stores/use-learning-mode-store";
-
-const creatorSchema = z.object({
-  email: z.string().email("Enter a valid email."),
-});
-
-type CreatorFormValues = z.infer<typeof creatorSchema>;
 
 const fadeIn = {
   hidden: { opacity: 0, y: 18 },
@@ -26,22 +26,27 @@ const fadeIn = {
 const valuePillars = [
   {
     icon: BrainCircuit,
-    title: "Adaptive guidance",
-    body: "A learning layer designed to understand goals, pace, recall, and next best steps.",
+    title: "AI Tutor",
+    body: "Ask for help while learning, with server-side plan limits and provider-backed responses.",
   },
   {
     icon: Layers3,
-    title: "Operating system mindset",
-    body: "Courses, notes, practice, and progress belong in one durable learner workspace.",
+    title: "Courses and progress",
+    body: "Discover published courses, enroll, track lessons, attempt quizzes, and keep momentum visible.",
   },
   {
     icon: Compass,
-    title: "Global learner paths",
-    body: "The foundation is ready for structured paths across skills, careers, and exams.",
+    title: "Memory engine",
+    body: "Flashcards, revision, XP, streaks, and analytics turn learning into a repeatable loop.",
   },
 ];
 
-const courseTracks = ["AI foundations", "Product thinking", "English fluency", "Career readiness"];
+const courseTracks = [
+  "AI-assisted study",
+  "Public course catalog",
+  "Revision workflow",
+  "Creator-led paths",
+];
 
 export function LandingPage() {
   return (
@@ -80,7 +85,7 @@ function SiteHeader() {
           ))}
         </nav>
         <Button asChild size="sm" variant="secondary">
-          <a href="#creators">Join waitlist</a>
+          <a href="/login">Sign in</a>
         </Button>
       </div>
     </header>
@@ -100,24 +105,24 @@ function HeroSection() {
         >
           <div className="mb-5 inline-flex items-center gap-2 rounded-full border bg-card px-3 py-1 text-sm font-medium text-muted-foreground">
             <Sparkles className="h-4 w-4 text-accent" aria-hidden="true" />
-            Phase 1: foundation plus learner MVP
+            AI learning platform for learners and creators
           </div>
           <h1 className="max-w-4xl text-4xl font-bold leading-tight text-foreground sm:text-5xl lg:text-6xl">
             LearnDojoWorld
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
-            A startup-grade AI learning operating system for focused learners, memory-aware
-            practice, and course discovery that can grow into a global education platform.
+            LearnDojoWorld brings AI tutoring, published courses, a memory engine, subscriptions,
+            payments, creator tools, and revenue foundations into one focused learning platform.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Button asChild size="lg">
-              <a href="#memory">
-                Explore foundation
+              <a href="/explore">
+                Explore courses
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </a>
             </Button>
             <Button asChild size="lg" variant="secondary">
-              <a href="#creators">Creator interest</a>
+              <a href="/become-creator">Become a creator</a>
             </Button>
           </div>
         </motion.div>
@@ -142,7 +147,7 @@ function LearningConsole() {
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-sm font-semibold text-primary">Learner cockpit</p>
-            <h2 className="mt-2 text-2xl font-bold text-foreground">Today&apos;s learning loop</h2>
+            <h2 className="mt-2 text-2xl font-bold text-foreground">A complete learning loop</h2>
           </div>
           <div className="rounded-md bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700">
             Ready
@@ -150,22 +155,20 @@ function LearningConsole() {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {["Recall weak concepts", "Resume active path", "Discover next course"].map(
-          (item, index) => (
-            <div
-              key={item}
-              className="flex items-center justify-between rounded-lg border bg-background px-4 py-3"
-            >
-              <div className="flex items-center gap-3">
-                <span className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-sm font-bold text-primary">
-                  {index + 1}
-                </span>
-                <span className="text-sm font-semibold text-foreground">{item}</span>
-              </div>
-              <CheckCircle2 className="h-5 w-5 text-emerald-600" aria-hidden="true" />
+        {["Ask AI Tutor", "Resume a lesson", "Review weak concepts"].map((item, index) => (
+          <div
+            key={item}
+            className="flex items-center justify-between rounded-lg border bg-background px-4 py-3"
+          >
+            <div className="flex items-center gap-3">
+              <span className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-sm font-bold text-primary">
+                {index + 1}
+              </span>
+              <span className="text-sm font-semibold text-foreground">{item}</span>
             </div>
-          ),
-        )}
+            <CheckCircle2 className="h-5 w-5 text-emerald-600" aria-hidden="true" />
+          </div>
+        ))}
       </CardContent>
     </Card>
   );
@@ -177,8 +180,8 @@ function AiLearningValue() {
       <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
         <SectionIntro
           eyebrow="AI learning value"
-          title="A foundation for learning that adapts before it overwhelms."
-          body="The Phase 1 surface is intentionally focused: prove the learner loop, make progress visible, and keep future AI systems grounded in clean product boundaries."
+          title="Built for serious learning, not scattered tabs."
+          body="LearnDojoWorld connects course learning, AI guidance, revision, and measurable progress so learners can keep moving without losing context."
         />
         <div className="mt-10 grid gap-4 md:grid-cols-3">
           {valuePillars.map((pillar) => (
@@ -207,7 +210,7 @@ function MemoryEnginePreview() {
         <SectionIntro
           eyebrow="Memory engine preview"
           title="Recall, review, and rhythm belong at the center."
-          body="This preview models the learner memory layer without implementing the complete engine yet."
+          body="Flashcards, revision queues, streaks, XP, and analytics keep knowledge from evaporating after a lesson ends."
         />
         <Card className="bg-white/88">
           <CardHeader>
@@ -253,7 +256,7 @@ function CourseDiscoveryPreview() {
         <SectionIntro
           body="The discovery layer starts simple: clear tracks, learner fit, and a path toward deeper personalization later."
           eyebrow="Course discovery preview"
-          title="A cleaner way to find what to learn next."
+          title="Courses that can grow with a creator marketplace."
           inverted
         />
         <div className="mt-10 grid gap-4 md:grid-cols-4">
@@ -262,7 +265,7 @@ function CourseDiscoveryPreview() {
               <p className="text-sm font-semibold text-cyan-200">Track</p>
               <h3 className="mt-3 text-lg font-bold">{track}</h3>
               <p className="mt-4 text-sm leading-6 text-slate-300">
-                Structured for learner goals, practice loops, and future AI recommendations.
+                Structured for learner goals, progress tracking, revision, and AI-assisted support.
               </p>
             </div>
           ))}
@@ -273,56 +276,44 @@ function CourseDiscoveryPreview() {
 }
 
 function CreatorCta() {
-  const {
-    formState: { errors, isSubmitSuccessful },
-    handleSubmit,
-    register,
-  } = useForm<CreatorFormValues>({
-    resolver: zodResolver(creatorSchema),
-    defaultValues: { email: "" },
-  });
-
-  function onSubmit(_: CreatorFormValues) {
-    return undefined;
-  }
-
   return (
     <section className="py-20" id="creators">
       <div className="mx-auto grid max-w-7xl gap-8 px-5 sm:px-6 lg:grid-cols-[1fr_0.86fr] lg:px-8">
         <SectionIntro
-          eyebrow="Creator CTA"
-          title="Build learning paths for a world that needs better guidance."
-          body="Creator workflows are not implemented yet. This foundation reserves the right surface for future course builders, mentors, and learning communities."
+          eyebrow="Creator economy"
+          title="Creators can build, submit, publish, and earn from courses."
+          body="Creator Studio includes course drafts, curriculum building, moderation handoff, paid course checkout, verified revenue attribution, payout profiles, and payout request review."
         />
         <Card className="bg-white/90">
           <CardHeader>
-            <h3 className="text-2xl font-bold">Creator interest</h3>
+            <h3 className="text-2xl font-bold">Creator foundation</h3>
             <p className="leading-7 text-muted-foreground">
-              A local-only form foundation for the future creator waitlist.
+              Start as a learner, upgrade to creator, and keep both learning and teaching abilities
+              in one account.
             </p>
           </CardHeader>
-          <CardContent>
-            <form className="space-y-3" onSubmit={(event) => void handleSubmit(onSubmit)(event)}>
-              <label className="sr-only" htmlFor="creator-email">
-                Email
-              </label>
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <input
-                  className="h-12 flex-1 rounded-md border bg-background px-4 text-sm outline-none transition focus:ring-2 focus:ring-ring"
-                  id="creator-email"
-                  placeholder="creator@company.com"
-                  type="email"
-                  {...register("email")}
-                />
-                <Button type="submit">Register interest</Button>
-              </div>
-              {errors.email ? (
-                <p className="text-sm font-medium text-accent">{errors.email.message}</p>
-              ) : null}
-              {isSubmitSuccessful ? (
-                <p className="text-sm font-medium text-primary">Interest captured locally.</p>
-              ) : null}
-            </form>
+          <CardContent className="space-y-4">
+            <div className="grid gap-3">
+              {[
+                { icon: Layers3, text: "Create course drafts with modules and text lessons." },
+                { icon: ReceiptText, text: "Submit courses for admin review before publishing." },
+                {
+                  icon: Wallet,
+                  text: "Track verified creator earnings and request payout review.",
+                },
+              ].map((item) => (
+                <div className="flex gap-3 rounded-lg border bg-background p-4" key={item.text}>
+                  <item.icon className="mt-0.5 h-5 w-5 flex-none text-primary" />
+                  <p className="text-sm leading-6 text-muted-foreground">{item.text}</p>
+                </div>
+              ))}
+            </div>
+            <Button asChild>
+              <a href="/become-creator">
+                Open Creator Studio
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </a>
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -335,7 +326,11 @@ function SiteFooter() {
     <footer className="border-t bg-white/72 py-8">
       <div className="mx-auto flex max-w-7xl flex-col gap-3 px-5 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
         <p>LearnDojoWorld</p>
-        <p>Production foundation for the learner MVP.</p>
+        <div className="flex flex-wrap gap-4">
+          <a href="/pricing">Pricing</a>
+          <a href="/about">About</a>
+          <a href="/contact">Contact</a>
+        </div>
       </div>
     </footer>
   );

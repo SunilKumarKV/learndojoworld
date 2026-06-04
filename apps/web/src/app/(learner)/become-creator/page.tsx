@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, BadgeCheck, BookOpen, Sparkles } from "lucide-react";
+import { ArrowRight, BadgeCheck, BookOpen, IndianRupee, Sparkles, Wallet } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { CreatorProfileForm } from "@/features/creator/components/creator-profile-form";
 import { useCreatorApply } from "@/features/creator/hooks/use-creator";
-import { LoadingState } from "@/features/dashboard/components/loading-state";
 import { useSession } from "@/hooks/use-session";
 import type { CreatorProfilePayload } from "@/services/creator.api";
 
@@ -21,11 +20,15 @@ export default function BecomeCreatorPage() {
 
   useEffect(() => {
     if (isLoading) return;
-    if (!user) router.replace("/login?next=/become-creator");
     if (user?.role === "CREATOR") router.replace("/creator/dashboard");
   }, [isLoading, router, user]);
 
   async function handleSubmit(payload: CreatorProfilePayload) {
+    if (!user) {
+      router.push("/login?next=/become-creator");
+      return;
+    }
+
     setErrorMessage("");
     try {
       await applyMutation.mutateAsync(payload);
@@ -35,8 +38,12 @@ export default function BecomeCreatorPage() {
     }
   }
 
-  if (isLoading || !user || user.role === "CREATOR") {
-    return <LoadingState />;
+  if (isLoading || user?.role === "CREATOR") {
+    return (
+      <main className="min-h-screen bg-slate-50 p-10 text-sm text-slate-600">
+        Loading creator studio...
+      </main>
+    );
   }
 
   return (
@@ -48,19 +55,29 @@ export default function BecomeCreatorPage() {
               Creator Studio
             </p>
             <h1 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950">
-              Teach what you know. Keep your learner account.
+              Teach what you know. Build courses. Earn from verified learning.
             </h1>
             <p className="mt-4 text-base leading-7 text-slate-600">
-              Start with a creator profile foundation today. Course creation, payments, and
-              marketplace tools arrive later without blocking your current learning flow.
+              LearnDojoWorld creators can build course drafts, submit them for review, sell paid
+              courses after publishing, track verified revenue, and request payout review without
+              losing learner abilities.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
-              <Button asChild>
-                <a href="#creator-form">
-                  <Sparkles aria-hidden className="h-4 w-4" />
-                  Start profile
-                </a>
-              </Button>
+              {user ? (
+                <Button asChild>
+                  <a href="#creator-form">
+                    <Sparkles aria-hidden className="h-4 w-4" />
+                    Start profile
+                  </a>
+                </Button>
+              ) : (
+                <Button asChild>
+                  <a href="/register">
+                    <Sparkles aria-hidden className="h-4 w-4" />
+                    Create account
+                  </a>
+                </Button>
+              )}
               <Button variant="secondary" onClick={() => router.push("/dashboard")}>
                 Learner dashboard
                 <ArrowRight aria-hidden className="h-4 w-4" />
@@ -76,8 +93,18 @@ export default function BecomeCreatorPage() {
             />
             <CreatorPromise
               icon={<BookOpen className="h-5 w-5" />}
-              title="Course foundation"
-              text="Your studio can list creator-owned courses when builder support lands."
+              title="Course builder"
+              text="Create course drafts, modules, and text lessons, then submit for review."
+            />
+            <CreatorPromise
+              icon={<IndianRupee className="h-5 w-5" />}
+              title="Verified revenue"
+              text="Paid course earnings are recorded only after verified payment webhooks."
+            />
+            <CreatorPromise
+              icon={<Wallet className="h-5 w-5" />}
+              title="Payout requests"
+              text="Save payout profile details and request admin review of unpaid earnings."
             />
           </div>
         </section>
@@ -96,16 +123,35 @@ export default function BecomeCreatorPage() {
                 enabled yet.
               </p>
             </div>
-            {errorMessage ? (
-              <div className="mb-5 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
-                {errorMessage}
+            {user ? (
+              <>
+                {errorMessage ? (
+                  <div className="mb-5 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                    {errorMessage}
+                  </div>
+                ) : null}
+                <CreatorProfileForm
+                  isSubmitting={applyMutation.isPending}
+                  mode="apply"
+                  onSubmit={handleSubmit}
+                />
+              </>
+            ) : (
+              <div className="space-y-4">
+                <p className="rounded-md bg-slate-100 px-4 py-3 text-sm leading-6 text-slate-700">
+                  Sign in or create an account to apply. Creator access upgrades your existing
+                  learner account and keeps learner progress intact.
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  <Button asChild>
+                    <a href="/login?next=/become-creator">Sign in to apply</a>
+                  </Button>
+                  <Button asChild variant="secondary">
+                    <a href="/register">Create account</a>
+                  </Button>
+                </div>
               </div>
-            ) : null}
-            <CreatorProfileForm
-              isSubmitting={applyMutation.isPending}
-              mode="apply"
-              onSubmit={handleSubmit}
-            />
+            )}
           </CardContent>
         </Card>
       </div>
