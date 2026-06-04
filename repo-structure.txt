@@ -1,0 +1,230 @@
+.
+├── apps
+│   ├── api
+│   │   ├── dist
+│   │   │   ├── app.module.js
+│   │   │   ├── app.module.js.map
+│   │   │   ├── common
+│   │   │   ├── config
+│   │   │   ├── lib
+│   │   │   ├── main.js
+│   │   │   ├── main.js.map
+│   │   │   └── modules
+│   │   ├── nest-cli.json
+│   │   ├── node_modules
+│   │   │   ├── @nestjs
+│   │   │   ├── @sentry
+│   │   │   ├── @types
+│   │   │   ├── bcrypt -> ../../../node_modules/.pnpm/bcrypt@6.0.0/node_modules/bcrypt
+│   │   │   ├── class-transformer -> ../../../node_modules/.pnpm/class-transformer@0.5.1/node_modules/class-transformer
+│   │   │   ├── class-validator -> ../../../node_modules/.pnpm/class-validator@0.15.1/node_modules/class-validator
+│   │   │   ├── helmet -> ../../../node_modules/.pnpm/helmet@8.2.0/node_modules/helmet
+│   │   │   ├── openai -> ../../../node_modules/.pnpm/openai@4.104.0/node_modules/openai
+│   │   │   ├── reflect-metadata -> ../../../node_modules/.pnpm/reflect-metadata@0.2.2/node_modules/reflect-metadata
+│   │   │   └── rxjs -> ../../../node_modules/.pnpm/rxjs@7.8.2/node_modules/rxjs
+│   │   ├── package.json
+│   │   ├── src
+│   │   │   ├── app.module.ts
+│   │   │   ├── common
+│   │   │   ├── config
+│   │   │   ├── lib
+│   │   │   ├── main.ts
+│   │   │   └── modules
+│   │   └── tsconfig.json
+│   └── web
+│       ├── components.json
+│       ├── next-env.d.ts
+│       ├── next.config.ts
+│       ├── node_modules
+│       │   ├── @hookform
+│       │   ├── @radix-ui
+│       │   ├── @sentry
+│       │   ├── @tanstack
+│       │   ├── @types
+│       │   ├── autoprefixer -> ../../../node_modules/.pnpm/autoprefixer@10.5.0_postcss@8.5.15/node_modules/autoprefixer
+│       │   ├── class-variance-authority -> ../../../node_modules/.pnpm/class-variance-authority@0.7.1/node_modules/class-variance-authority
+│       │   ├── clsx -> ../../../node_modules/.pnpm/clsx@2.1.1/node_modules/clsx
+│       │   ├── framer-motion -> ../../../node_modules/.pnpm/framer-motion@12.40.0_react-dom@19.2.6_react@19.2.6__react@19.2.6/node_modules/framer-motion
+│       │   ├── lucide-react -> ../../../node_modules/.pnpm/lucide-react@1.16.0_react@19.2.6/node_modules/lucide-react
+│       │   ├── next -> ../../../node_modules/.pnpm/next@16.2.6_@babel+core@7.29.7_@opentelemetry+api@1.9.1_react-dom@19.2.6_react@19.2.6__react@19.2.6/node_modules/next
+│       │   ├── postcss -> ../../../node_modules/.pnpm/postcss@8.5.15/node_modules/postcss
+│       │   ├── react -> ../../../node_modules/.pnpm/react@19.2.6/node_modules/react
+│       │   ├── react-dom -> ../../../node_modules/.pnpm/react-dom@19.2.6_react@19.2.6/node_modules/react-dom
+│       │   ├── react-hook-form -> ../../../node_modules/.pnpm/react-hook-form@7.76.1_react@19.2.6/node_modules/react-hook-form
+│       │   ├── tailwind-merge -> ../../../node_modules/.pnpm/tailwind-merge@3.6.0/node_modules/tailwind-merge
+│       │   ├── tailwindcss -> ../../../node_modules/.pnpm/tailwindcss@3.4.19_tsx@4.22.3_yaml@2.9.0/node_modules/tailwindcss
+│       │   ├── zod -> ../../../node_modules/.pnpm/zod@4.4.3/node_modules/zod
+│       │   └── zustand -> ../../../node_modules/.pnpm/zustand@5.0.13_@types+react@19.2.15_react@19.2.6/node_modules/zustand
+│       ├── package.json
+│       ├── postcss.config.mjs
+│       ├── src
+│       │   ├── app
+│       │   ├── components
+│       │   ├── constants
+│       │   ├── features
+│       │   ├── hooks
+│       │   ├── instrumentation-client.ts
+│       │   ├── instrumentation.ts
+│       │   ├── lib
+│       │   ├── sentry.server.config.ts
+│       │   ├── services
+│       │   ├── stores
+│       │   └── types
+│       ├── tailwind.config.ts
+│       └── tsconfig.json
+├── CODE_OF_CONDUCT.md
+├── CONTRIBUTING.md
+├── dist
+│   └── tsconfig.tsbuildinfo
+├── docker-compose.yml
+├── docs
+│   ├── AI_RULES.md
+│   ├── architecture.md
+│   ├── branching-strategy.md
+│   ├── deployment.md
+│   ├── local-development.md
+│   ├── observability.md
+│   ├── product-roadmap.md
+│   ├── release-checklist.md
+│   ├── security-hardening.md
+│   ├── security.md
+│   └── setup.md
+├── eslint.config.mjs
+├── LICENSE
+├── node_modules
+│   ├── @eslint
+│   │   ├── config-array -> ../.pnpm/@eslint+config-array@0.23.5/node_modules/@eslint/config-array
+│   │   ├── config-helpers -> ../.pnpm/@eslint+config-helpers@0.6.0/node_modules/@eslint/config-helpers
+│   │   ├── core -> ../.pnpm/@eslint+core@1.2.1/node_modules/@eslint/core
+│   │   ├── js -> ../.pnpm/@eslint+js@10.0.1_eslint@10.4.0_jiti@2.7.0_/node_modules/@eslint/js
+│   │   ├── object-schema -> ../.pnpm/@eslint+object-schema@3.0.5/node_modules/@eslint/object-schema
+│   │   └── plugin-kit -> ../.pnpm/@eslint+plugin-kit@0.7.1/node_modules/@eslint/plugin-kit
+│   ├── @eslint-community
+│   │   ├── eslint-utils -> ../.pnpm/@eslint-community+eslint-utils@4.9.1_eslint@10.4.0_jiti@2.7.0_/node_modules/@eslint-community/eslint-utils
+│   │   └── regexpp -> ../.pnpm/@eslint-community+regexpp@4.12.2/node_modules/@eslint-community/regexpp
+│   ├── @prisma
+│   │   └── client -> ../.pnpm/@prisma+client@6.19.3_prisma@6.19.3_typescript@5.9.3__typescript@5.9.3/node_modules/@prisma/client
+│   ├── @types
+│   │   ├── eslint -> ../.pnpm/@types+eslint@9.6.1/node_modules/@types/eslint
+│   │   ├── eslint-scope -> ../.pnpm/@types+eslint-scope@3.7.7/node_modules/@types/eslint-scope
+│   │   └── node -> ../.pnpm/@types+node@22.19.19/node_modules/@types/node
+│   ├── @typescript-eslint
+│   │   ├── eslint-plugin -> ../.pnpm/@typescript-eslint+eslint-plugin@8.60.0_@typescript-eslint+parser@8.60.0_eslint@10.4.0_jiti@2_fgfcawrqxo2gqsyzljhxbjlt7i/node_modules/@typescript-eslint/eslint-plugin
+│   │   ├── parser -> ../.pnpm/@typescript-eslint+parser@8.60.0_eslint@10.4.0_jiti@2.7.0__typescript@5.9.3/node_modules/@typescript-eslint/parser
+│   │   ├── project-service -> ../.pnpm/@typescript-eslint+project-service@8.60.0_typescript@5.9.3/node_modules/@typescript-eslint/project-service
+│   │   ├── scope-manager -> ../.pnpm/@typescript-eslint+scope-manager@8.60.0/node_modules/@typescript-eslint/scope-manager
+│   │   ├── tsconfig-utils -> ../.pnpm/@typescript-eslint+tsconfig-utils@8.60.0_typescript@5.9.3/node_modules/@typescript-eslint/tsconfig-utils
+│   │   ├── type-utils -> ../.pnpm/@typescript-eslint+type-utils@8.60.0_eslint@10.4.0_jiti@2.7.0__typescript@5.9.3/node_modules/@typescript-eslint/type-utils
+│   │   ├── types -> ../.pnpm/@typescript-eslint+types@8.60.0/node_modules/@typescript-eslint/types
+│   │   ├── typescript-estree -> ../.pnpm/@typescript-eslint+typescript-estree@8.60.0_typescript@5.9.3/node_modules/@typescript-eslint/typescript-estree
+│   │   ├── utils -> ../.pnpm/@typescript-eslint+utils@8.60.0_eslint@10.4.0_jiti@2.7.0__typescript@5.9.3/node_modules/@typescript-eslint/utils
+│   │   └── visitor-keys -> ../.pnpm/@typescript-eslint+visitor-keys@8.60.0/node_modules/@typescript-eslint/visitor-keys
+│   ├── eslint -> .pnpm/eslint@10.4.0_jiti@2.7.0/node_modules/eslint
+│   ├── eslint-config-prettier -> .pnpm/eslint-config-prettier@10.1.8_eslint@10.4.0_jiti@2.7.0_/node_modules/eslint-config-prettier
+│   ├── eslint-scope -> .pnpm/eslint-scope@9.1.2/node_modules/eslint-scope
+│   ├── eslint-visitor-keys -> .pnpm/eslint-visitor-keys@5.0.1/node_modules/eslint-visitor-keys
+│   ├── globals -> .pnpm/globals@17.6.0/node_modules/globals
+│   ├── husky -> .pnpm/husky@9.1.7/node_modules/husky
+│   ├── lint-staged -> .pnpm/lint-staged@17.0.5/node_modules/lint-staged
+│   ├── prettier -> .pnpm/prettier@3.8.3/node_modules/prettier
+│   ├── prettier-plugin-prisma -> .pnpm/prettier-plugin-prisma@5.0.0_prettier@3.8.3/node_modules/prettier-plugin-prisma
+│   ├── prisma -> .pnpm/prisma@6.19.3_typescript@5.9.3/node_modules/prisma
+│   ├── tsx -> .pnpm/tsx@4.22.3/node_modules/tsx
+│   ├── typescript -> .pnpm/typescript@5.9.3/node_modules/typescript
+│   └── typescript-eslint -> .pnpm/typescript-eslint@8.60.0_eslint@10.4.0_jiti@2.7.0__typescript@5.9.3/node_modules/typescript-eslint
+├── package.json
+├── packages
+│   ├── config
+│   │   ├── dist
+│   │   │   ├── index.d.ts
+│   │   │   ├── index.d.ts.map
+│   │   │   ├── index.js
+│   │   │   └── index.js.map
+│   │   ├── package.json
+│   │   ├── src
+│   │   │   └── index.ts
+│   │   └── tsconfig.json
+│   ├── sdk
+│   │   ├── dist
+│   │   │   ├── index.d.ts
+│   │   │   ├── index.d.ts.map
+│   │   │   ├── index.js
+│   │   │   └── index.js.map
+│   │   ├── package.json
+│   │   ├── src
+│   │   │   └── index.ts
+│   │   └── tsconfig.json
+│   ├── shared
+│   │   ├── dist
+│   │   │   ├── index.d.ts
+│   │   │   ├── index.d.ts.map
+│   │   │   ├── index.js
+│   │   │   └── index.js.map
+│   │   ├── package.json
+│   │   ├── src
+│   │   │   └── index.ts
+│   │   └── tsconfig.json
+│   ├── ui
+│   │   ├── dist
+│   │   │   ├── index.d.ts
+│   │   │   ├── index.d.ts.map
+│   │   │   ├── index.js
+│   │   │   └── index.js.map
+│   │   ├── package.json
+│   │   ├── src
+│   │   │   └── index.ts
+│   │   └── tsconfig.json
+│   └── validators
+│       ├── dist
+│       │   ├── index.d.ts
+│       │   ├── index.d.ts.map
+│       │   ├── index.js
+│       │   └── index.js.map
+│       ├── package.json
+│       ├── src
+│       │   └── index.ts
+│       └── tsconfig.json
+├── pnpm-lock.yaml
+├── pnpm-workspace.yaml
+├── prisma
+│   ├── migrations
+│   │   ├── 20260527064112_init_foundation
+│   │   │   └── migration.sql
+│   │   ├── 20260527071500_auth_foundation
+│   │   │   └── migration.sql
+│   │   ├── 20260528115531_add_onboarding_profile_fields
+│   │   │   └── migration.sql
+│   │   ├── 20260528164236_course_engine_foundation
+│   │   │   └── migration.sql
+│   │   ├── 20260529121440_memory_engine_mvp
+│   │   │   └── migration.sql
+│   │   ├── 20260529155917_startup_analytics_gamification
+│   │   │   └── migration.sql
+│   │   ├── 20260530193857_learndojoworld
+│   │   │   └── migration.sql
+│   │   ├── 20260603120000_creator_studio_foundation
+│   │   │   └── migration.sql
+│   │   ├── 20260603133000_course_builder_mvp
+│   │   │   └── migration.sql
+│   │   ├── 20260603141429_add_rejected_course_status
+│   │   │   └── migration.sql
+│   │   ├── 20260603171022_add_payment_model
+│   │   │   └── migration.sql
+│   │   ├── 20260604053735_subscriptions_ai_monetization
+│   │   │   └── migration.sql
+│   │   ├── 20260604113504_creator_revenue_payouts
+│   │   │   └── migration.sql
+│   │   ├── 20260604130835_learndojoworld
+│   │   │   └── migration.sql
+│   │   ├── 20260604153040_learndojoworld
+│   │   │   └── migration.sql
+│   │   └── migration_lock.toml
+│   ├── schema.prisma
+│   └── seed.ts
+├── README.md
+├── repo-structure.txt
+├── scripts
+├── SECURITY.md
+└── tsconfig.base.json
+
+132 directories, 96 files
