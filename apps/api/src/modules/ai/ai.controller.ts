@@ -4,6 +4,7 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
   Param,
   Post,
   UseGuards,
@@ -21,32 +22,28 @@ export class AIController {
 
   @UseGuards(JwtAuthGuard)
   @Post("chat")
+  @HttpCode(200)
   async chat(@CurrentUser() user: AuthenticatedUser, @Body() body: AIChatRequestDto) {
     const result = await this.aiService.chat(user.id, body);
 
-    // result contains conversationId, message, aiUsage, provider, model, fallbackUsed
     return {
-      success: true,
-      message: "AI response generated",
-      data: {
-        conversationId: result.conversationId,
-        answer: result.message?.content ?? null,
-        message: result.message,
-        provider: result.provider,
-        model: result.model,
-        fallbackUsed: result.fallbackUsed ?? false,
-        aiUsage: result.aiUsage,
-        usage: {
-          dailyLimit: result.aiUsage.dailyLimit,
-          messagesRemainingToday: Math.max(
-            0,
-            result.aiUsage.dailyLimit - result.aiUsage.messagesUsedToday,
-          ),
-          messagesUsedThisMonth: result.aiUsage.messagesUsedThisMonth,
-          messagesUsedToday: result.aiUsage.messagesUsedToday,
-          monthlyLimit: result.aiUsage.monthlyLimit,
-          planCode: result.aiUsage.planCode,
-        },
+      conversationId: result.conversationId,
+      answer: result.message?.content ?? null,
+      message: result.message,
+      provider: result.provider,
+      model: result.model,
+      fallbackUsed: result.fallbackUsed ?? false,
+      aiUsage: result.aiUsage,
+      usage: {
+        dailyLimit: result.aiUsage.dailyLimit,
+        messagesRemainingToday: Math.max(
+          0,
+          result.aiUsage.dailyLimit - result.aiUsage.messagesUsedToday,
+        ),
+        messagesUsedThisMonth: result.aiUsage.messagesUsedThisMonth,
+        messagesUsedToday: result.aiUsage.messagesUsedToday,
+        monthlyLimit: result.aiUsage.monthlyLimit,
+        planCode: result.aiUsage.planCode,
       },
     };
   }
