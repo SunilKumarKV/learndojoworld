@@ -84,6 +84,10 @@ model User {
   aiUsageEvents      AIUsageEvent[]
   aiConversations    AIConversation[]   @relation("UserAIConversations")
   aiMessages         AIMessage[]        @relation("UserAIMessages")
+  referralCode       ReferralCode?
+  invitationsSent    ReferralEvent[]    @relation("InviterEvents")
+  invitationReceived ReferralEvent?     @relation("InviteeEvent")
+  referralRewards    ReferralReward[]
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
 
@@ -605,4 +609,77 @@ model AIMessage {
   course         Course?        @relation("CourseAIMessages", fields: [courseId], references: [id], onDelete: SetNull)
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
+}
+
+enum ReferralStatus {
+  PENDING
+  COMPLETED
+  REJECTED
+}
+
+enum RewardStatus {
+  PENDING
+  APPROVED
+  GRANTED
+  REJECTED
+}
+
+model ReferralCode {
+  id     String  @id @default(uuid()) @db.Uuid
+  userId String  @unique @db.Uuid
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  code   String  @unique
+  active Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events ReferralEvent[]
+
+  @@index([code])
+  @@index([active])
+}
+
+model ReferralEvent {
+  id String @id @default(uuid()) @db.Uuid
+
+  inviterUserId String @db.Uuid
+  inviter       User   @relation("InviterEvents", fields: [inviterUserId], references: [id], onDelete: Cascade)
+
+  invitedUserId String @unique @db.Uuid
+  invited       User   @relation("InviteeEvent", fields: [invitedUserId], references: [id], onDelete: Cascade)
+
+  referralCodeId String       @db.Uuid
+  referralCode   ReferralCode @relation(fields: [referralCodeId], references: [id], onDelete: Cascade)
+
+  status ReferralStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reward ReferralReward?
+
+  @@index([inviterUserId, status])
+  @@index([invitedUserId])
+  @@index([referralCodeId])
+}
+
+model ReferralReward {
+  id String @id @default(uuid()) @db.Uuid
+
+  userId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  referralEventId String        @unique @db.Uuid
+  referralEvent   ReferralEvent @relation(fields: [referralEventId], references: [id], onDelete: Cascade)
+
+  rewardType  String
+  rewardValue String
+  status      RewardStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, status])
+  @@index([status])
 }
