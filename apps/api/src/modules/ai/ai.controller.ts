@@ -37,7 +37,15 @@ export class AIController {
         fallbackUsed: result.fallbackUsed ?? false,
         aiUsage: result.aiUsage,
         usage: {
-          messagesRemainingToday: result.aiUsage?.remainingToday ?? 0,
+          dailyLimit: result.aiUsage.dailyLimit,
+          messagesRemainingToday: Math.max(
+            0,
+            result.aiUsage.dailyLimit - result.aiUsage.messagesUsedToday,
+          ),
+          messagesUsedThisMonth: result.aiUsage.messagesUsedThisMonth,
+          messagesUsedToday: result.aiUsage.messagesUsedToday,
+          monthlyLimit: result.aiUsage.monthlyLimit,
+          planCode: result.aiUsage.planCode,
         },
       },
     };

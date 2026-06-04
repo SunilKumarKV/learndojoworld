@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -11,6 +10,7 @@ import { PrismaService } from "../../lib/prisma/prisma.service";
 import { AIChatRequestDto, AIInstruction } from "./dto/chat-request.dto";
 import { AIChatMessage } from "../../lib/ai/ai.provider";
 import { AIProviderRouter, ProviderResult } from "../../lib/ai/provider-router";
+import { BillingService, type AIUsageSummary } from "../billing/billing.service";
 
 type AIChatServiceResult = {
   conversationId: string;
@@ -20,12 +20,7 @@ type AIChatServiceResult = {
     content: string;
     createdAt: Date;
   };
-  aiUsage: {
-    messagesToday: number;
-    remainingToday: number;
-    dailyLimit: number;
-    costToday: number;
-  };
+  aiUsage: AIUsageSummary;
   provider: string;
   model: string;
   fallbackUsed: boolean;
@@ -34,27 +29,30 @@ type AIChatServiceResult = {
 @Injectable()
 export class AIService {
   private providerRouter?: AIProviderRouter;
-  private readonly dailyMessageLimit = 20;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
+    private readonly billingService: BillingService,
   ) {}
 
   async chat(userId: string, body: AIChatRequestDto): Promise<AIChatServiceResult> {
     // Initialize provider router on first use (avoids throwing on bootstrap)
     if (!this.providerRouter) {
-      this.providerRouter = new AIProviderRouter(process.env);
+      this.providerRouter = new AIProviderRouter({
+        ...process.env,
+        AI_FALLBACK_PROVIDER: this.configService.get<string>("AI_FALLBACK_PROVIDER"),
+        AI_PRIMARY_PROVIDER: this.configService.get<string>("AI_PRIMARY_PROVIDER"),
+        AI_PROVIDER: this.configService.get<string>("AI_PROVIDER"),
+        GEMINI_API_KEY: this.configService.get<string>("GEMINI_API_KEY"),
+        GEMINI_MODEL: this.configService.get<string>("GEMINI_MODEL"),
+        OPENAI_API_KEY: this.configService.get<string>("OPENAI_API_KEY"),
+        OPENAI_MODEL: this.configService.get<string>("OPENAI_MODEL"),
+      });
     }
 
     const conversation = await this.ensureConversation(userId, body);
-    const usageStats = await this.getDailyUsage(userId);
-
-    if (usageStats.messagesToday >= this.dailyMessageLimit) {
-      throw new BadRequestException(
-        "You have reached your free AI usage limit for today. Upgrade for more tutor messages.",
-      );
-    }
+    await this.billingService.assertAIUsageAvailable(userId);
 
     const contextMessages = await this.buildContextMessages(
       userId,
@@ -108,6 +106,13 @@ export class AIService {
           },
           updatedAt: new Date(),
         },
+      });
+
+      const usageStats = await this.billingService.consumeAIUsage({
+        model: response.model,
+        provider: response.provider,
+        tokensUsed: response.usage.totalTokens,
+        userId,
       });
 
       return {
@@ -241,29 +246,6 @@ export class AIService {
         title: conversation.title ?? body.message.slice(0, 120),
       },
     });
-  }
-
-  private async getDailyUsage(userId: string) {
-    const now = new Date();
-    const startOfDay = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
-    );
-
-    const messagesToday = await this.prisma.aIMessage.count({
-      where: { userId, createdAt: { gte: startOfDay } },
-    });
-
-    const costSum = await this.prisma.aIMessage.aggregate({
-      _sum: { cost: true },
-      where: { userId, createdAt: { gte: startOfDay } },
-    });
-
-    return {
-      messagesToday,
-      costToday: Number(costSum._sum.cost ?? 0),
-      dailyLimit: this.dailyMessageLimit,
-      remainingToday: Math.max(0, this.dailyMessageLimit - messagesToday),
-    };
   }
 
   private async buildContextMessages(

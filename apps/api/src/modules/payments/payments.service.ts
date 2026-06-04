@@ -6,7 +6,13 @@ import {
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { createHmac, timingSafeEqual } from "crypto";
-import { PaymentGateway, PaymentStatus } from "@prisma/client";
+import {
+  PaymentGateway,
+  PaymentStatus,
+  PlanCode,
+  Prisma,
+  SubscriptionStatus,
+} from "@prisma/client";
 
 import type { EnvironmentVariables } from "../../config/env.validation";
 import { PrismaService } from "../../lib/prisma/prisma.service";
@@ -15,7 +21,7 @@ import {
   PaymentGateway as CheckoutPaymentGateway,
 } from "./dto/checkout-request.dto";
 
-type CheckoutResponse = {
+export type CheckoutResponse = {
   gateway: "stripe" | "razorpay";
   paymentId: string;
   gatewayOrderId: string;
@@ -25,6 +31,27 @@ type CheckoutResponse = {
   publishableKey?: string;
   keyId?: string;
   providerConfigured: boolean;
+};
+
+type SubscriptionCheckoutArgs = {
+  amount: number;
+  currency: string;
+  gateway: PaymentGateway;
+  interval: "MONTHLY" | "YEARLY";
+  planCode: PlanCode;
+  planId: string;
+  subscriptionId: string;
+  userId: string;
+};
+
+type PaymentMetadata = {
+  checkoutType?: "COURSE" | "SUBSCRIPTION";
+  courseSlug?: string;
+  internalOrderId?: string;
+  interval?: "MONTHLY" | "YEARLY";
+  planCode?: PlanCode;
+  planId?: string;
+  subscriptionId?: string;
 };
 
 type StripeWebhookEvent = {
@@ -166,6 +193,46 @@ export class PaymentsService {
           checkoutType: "COURSE",
           courseSlug: course.slug,
           internalOrderId: gatewayOrderId,
+        },
+      },
+      where: { id: payment.id },
+    });
+
+    return this.buildCheckoutResponse(updatedPayment);
+  }
+
+  async createSubscriptionCheckoutSession(
+    args: SubscriptionCheckoutArgs,
+  ): Promise<CheckoutResponse> {
+    const payment = await this.prisma.payment.create({
+      data: {
+        amount: args.amount,
+        currency: args.currency,
+        gateway: args.gateway,
+        metadata: {
+          checkoutType: "SUBSCRIPTION",
+          interval: args.interval,
+          planCode: args.planCode,
+          planId: args.planId,
+          subscriptionId: args.subscriptionId,
+        },
+        status: PaymentStatus.PENDING,
+        subscriptionId: args.subscriptionId,
+        userId: args.userId,
+      },
+    });
+
+    const gatewayOrderId = this.createInternalGatewayOrderId(payment.gateway, payment.id);
+    const updatedPayment = await this.prisma.payment.update({
+      data: {
+        gatewayOrderId,
+        metadata: {
+          checkoutType: "SUBSCRIPTION",
+          internalOrderId: gatewayOrderId,
+          interval: args.interval,
+          planCode: args.planCode,
+          planId: args.planId,
+          subscriptionId: args.subscriptionId,
         },
       },
       where: { id: payment.id },
@@ -466,6 +533,30 @@ export class PaymentsService {
           },
         });
       }
+
+      const metadata = this.readPaymentMetadata(payment.metadata);
+      const subscriptionId = payment.subscriptionId ?? metadata.subscriptionId;
+
+      if (metadata.checkoutType === "SUBSCRIPTION" && subscriptionId) {
+        const activatedSubscription = await tx.subscription.update({
+          data: {
+            status: SubscriptionStatus.ACTIVE,
+          },
+          where: { id: subscriptionId },
+        });
+
+        await tx.subscription.updateMany({
+          data: {
+            cancelledAt: new Date(),
+            status: SubscriptionStatus.EXPIRED,
+          },
+          where: {
+            id: { not: activatedSubscription.id },
+            status: SubscriptionStatus.ACTIVE,
+            userId: payment.userId,
+          },
+        });
+      }
     });
   }
 
@@ -524,6 +615,40 @@ export class PaymentsService {
     } catch {
       throw new BadRequestException("Webhook payload is not valid JSON.");
     }
+  }
+
+  private readPaymentMetadata(metadata: Prisma.JsonValue | null): PaymentMetadata {
+    if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+      return {};
+    }
+
+    const parsed: PaymentMetadata = {};
+
+    if (metadata.checkoutType === "SUBSCRIPTION" || metadata.checkoutType === "COURSE") {
+      parsed.checkoutType = metadata.checkoutType;
+    }
+
+    if (metadata.interval === "MONTHLY" || metadata.interval === "YEARLY") {
+      parsed.interval = metadata.interval;
+    }
+
+    if (
+      metadata.planCode === PlanCode.FREE ||
+      metadata.planCode === PlanCode.PRO ||
+      metadata.planCode === PlanCode.PREMIUM
+    ) {
+      parsed.planCode = metadata.planCode;
+    }
+
+    if (typeof metadata.planId === "string") {
+      parsed.planId = metadata.planId;
+    }
+
+    if (typeof metadata.subscriptionId === "string") {
+      parsed.subscriptionId = metadata.subscriptionId;
+    }
+
+    return parsed;
   }
 }
 

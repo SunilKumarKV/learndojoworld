@@ -5,7 +5,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { AIUsageMeter } from "@/features/ai/ai-usage-meter";
 import { useSession } from "@/hooks/use-session";
+import { ApiError } from "@/services/api-client";
 import {
   AIChatRequest,
   AIConversationDetail,
@@ -16,6 +18,7 @@ import {
   getAIConversation,
   getAIConversations,
 } from "@/services/ai.api";
+import { AIUsageSummary, getAIUsage } from "@/services/billing.api";
 
 const instructionButtons: Array<{ label: string; value: AIInstruction }> = [
   { label: "Explain Like Beginner", value: "EXPLAIN_SIMPLE" },
@@ -44,12 +47,8 @@ function AIPageContent() {
   const [instruction] = useState<AIInstruction | undefined>(undefined);
   const [isBusy, setIsBusy] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [aiUsage, setAiUsage] = useState<{
-    messagesToday: number;
-    remainingToday: number;
-    dailyLimit: number;
-    costToday: number;
-  } | null>(null);
+  const [aiUsage, setAiUsage] = useState<AIUsageSummary | null>(null);
+  const [upgradeRequired, setUpgradeRequired] = useState(false);
   const [lastProvider, setLastProvider] = useState<string | null>(null);
 
   const currentContextLabel = useMemo(() => {
@@ -69,7 +68,17 @@ function AIPageContent() {
     if (!user) return;
 
     void loadConversations();
+    void loadUsage();
   }, [user]);
+
+  async function loadUsage() {
+    try {
+      const response = await getAIUsage();
+      setAiUsage(response.data);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Unable to load AI usage.");
+    }
+  }
 
   async function loadConversations() {
     try {
@@ -119,6 +128,7 @@ function AIPageContent() {
       const response = await chatWithAI(payload);
       setAiUsage(response.data.aiUsage);
       setLastProvider(response.data.provider ?? null);
+      setUpgradeRequired(false);
 
       if (!response.data.conversationId?.trim() || response.data.conversationId === "undefined") {
         throw new Error("AI response did not include a valid conversation id.");
@@ -150,9 +160,15 @@ function AIPageContent() {
 
       setInput("");
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "AI tutor request failed. Please try again.",
-      );
+      if (error instanceof ApiError && error.status === 402) {
+        setUpgradeRequired(true);
+        await loadUsage();
+        setErrorMessage("You have reached your AI tutor limit. Upgrade your plan to continue.");
+      } else {
+        setErrorMessage(
+          error instanceof Error ? error.message : "AI tutor request failed. Please try again.",
+        );
+      }
     } finally {
       setIsBusy(false);
     }
@@ -237,9 +253,14 @@ function AIPageContent() {
                 </Button>
               </div>
               {errorMessage ? (
-                <p className="rounded-3xl bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                  {errorMessage}
-                </p>
+                <div className="rounded-lg bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                  <p>{errorMessage}</p>
+                  {upgradeRequired ? (
+                    <Button className="mt-3" onClick={() => router.push("/billing")}>
+                      View plans
+                    </Button>
+                  ) : null}
+                </div>
               ) : null}
             </CardContent>
           </Card>
@@ -306,17 +327,7 @@ function AIPageContent() {
               <h2 className="mt-3 text-xl font-semibold text-slate-950">AI quota</h2>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-slate-600">
-                Free tier includes 20 tutor messages per day.
-              </p>
-              <div className="mt-4 rounded-3xl bg-slate-50 p-4 text-sm text-slate-900">
-                <p className="font-semibold">Used today</p>
-                <p>{aiUsage?.messagesToday ?? 0} / 20 messages</p>
-                <p className="mt-2 text-slate-600">Remaining: {aiUsage?.remainingToday ?? 20}</p>
-                <p className="mt-2 text-slate-600">
-                  Estimated cost: ${aiUsage?.costToday.toFixed(4) ?? "0.0000"}
-                </p>
-              </div>
+              <AIUsageMeter compact usage={aiUsage} />
             </CardContent>
           </Card>
 

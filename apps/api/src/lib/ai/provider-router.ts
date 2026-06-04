@@ -55,8 +55,8 @@ export class AIProviderRouter {
     const tried: Array<{ name: ProviderName; err?: unknown }> = [];
 
     const tryProvider = async (name: ProviderName) => {
-      const provider = this.createProvider(name);
       try {
+        const provider = this.createProvider(name);
         const res = await provider.chat(messages);
         const modelKey = name === "OPENAI" ? "OPENAI_MODEL" : "GEMINI_MODEL";
         return {

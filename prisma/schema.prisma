@@ -13,6 +13,20 @@ enum UserRole {
   ADMIN
 }
 
+enum PlanCode {
+  FREE
+  PRO
+  PREMIUM
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  EXPIRED
+  TRIALING
+}
+
 enum Difficulty {
   BEGINNER
   INTERMEDIATE
@@ -65,6 +79,8 @@ model User {
   createdCourses     Course[]           @relation("CreatorCourses")
   auditLogs          AuditLog[]         @relation("AuditActor")
   payments           Payment[]
+  subscriptions      Subscription[]
+  aiUsageEvents      AIUsageEvent[]
   aiConversations    AIConversation[]   @relation("UserAIConversations")
   aiMessages         AIMessage[]        @relation("UserAIMessages")
   createdAt          DateTime           @default(now())
@@ -394,6 +410,8 @@ model Payment {
   user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   courseId         String?        @db.Uuid
   course           Course?        @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  subscriptionId   String?        @db.Uuid
+  subscription     Subscription?  @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
   gateway          PaymentGateway
   gatewayOrderId   String?        @unique
   gatewayPaymentId String?        @unique
@@ -408,6 +426,7 @@ model Payment {
   @@index([status])
   @@index([gateway])
   @@index([courseId])
+  @@index([subscriptionId])
 }
 
 enum PaymentGateway {
@@ -421,6 +440,63 @@ enum PaymentStatus {
   FAILED
   REFUNDED
   CANCELLED
+}
+
+model Plan {
+  id             String         @id @default(uuid()) @db.Uuid
+  code           PlanCode       @unique
+  name           String
+  description    String
+  monthlyPrice   Int
+  yearlyPrice    Int
+  currency       String         @default("INR")
+  aiDailyLimit   Int
+  aiMonthlyLimit Int
+  features       Json
+  active         Boolean        @default(true)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  subscriptions  Subscription[]
+
+  @@index([active])
+}
+
+model Subscription {
+  id                    String             @id @default(uuid()) @db.Uuid
+  userId                String             @db.Uuid
+  user                  User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId                String             @db.Uuid
+  plan                  Plan               @relation(fields: [planId], references: [id], onDelete: Restrict)
+  status                SubscriptionStatus @default(TRIALING)
+  gateway               PaymentGateway?
+  gatewaySubscriptionId String?            @unique
+  currentPeriodStart    DateTime
+  currentPeriodEnd      DateTime
+  cancelledAt           DateTime?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  payments              Payment[]
+
+  @@index([userId, status])
+  @@index([planId])
+  @@index([currentPeriodEnd])
+}
+
+model AIUsageEvent {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @db.Uuid
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date         DateTime @db.Date
+  month        String
+  messagesUsed Int      @default(1)
+  tokensUsed   Int      @default(0)
+  provider     String
+  model        String
+  createdAt    DateTime @default(now())
+
+  @@index([userId, date])
+  @@index([userId, month])
+  @@index([createdAt])
 }
 
 enum AIMessageRole {
