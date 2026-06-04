@@ -1,0 +1,71 @@
+# LearnDojoWorld Global Startup Rules
+
+This is a global startup product.
+
+Mission:
+Build a production-grade learning platform that combines:
+
+- Learning
+- AI tutoring
+- Creator economy
+- Payments
+- Marketplace
+- Retention systems
+
+Code Quality Rules:
+
+- TypeScript strict
+- No any unless absolutely necessary
+- No ts-ignore unless approved
+- No eslint-disable unless approved
+- No fake business data
+- No simulated payment success
+- No simulated AI success
+- No mock production logic
+
+Architecture Rules:
+
+- API-first
+- Prisma-first schema changes
+- NestJS backend
+- Next.js frontend
+- Centralized API client
+- Role-based authorization
+- Audit logging for sensitive actions
+
+Security Rules:
+
+- Never commit secrets
+- Never hardcode API keys
+- Validate all inputs
+- Protect admin routes
+- Protect creator ownership
+- Verify webhooks
+- Preserve CodeQL compliance
+
+Startup Rules:
+
+- Prefer reusable systems over one-off implementations
+- Think global scale
+- Think monetization impact
+- Think retention impact
+- Think creator economy impact
+
+Before marking a phase complete:
+
+Run:
+pnpm format:check
+pnpm lint
+pnpm typecheck
+pnpm build
+
+A phase is not complete until all checks pass.
+
+Founder:
+Sunil Kumar K V
+
+Product:
+LearnDojoWorld
+
+Goal:
+Global launch-ready startup.
