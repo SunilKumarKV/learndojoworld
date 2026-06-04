@@ -20,6 +20,7 @@ import { OnboardingModule } from "./modules/onboarding/onboarding.module";
 import { PaymentsModule } from "./modules/payments/payments.module";
 import { ProfilesModule } from "./modules/profiles/profiles.module";
 import { UsersModule } from "./modules/users/users.module";
+import { ReferralsModule } from "./modules/referrals/referrals.module";
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { UsersModule } from "./modules/users/users.module";
     PaymentsModule,
     ProfilesModule,
     UsersModule,
+    ReferralsModule,
   ],
 })
 export class AppModule {}
