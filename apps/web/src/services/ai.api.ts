@@ -1,4 +1,5 @@
 import { apiClient } from "@/services/api-client";
+import type { AIUsageSummary } from "@/services/billing.api";
 
 export type AIInstruction =
   | "EXPLAIN_SIMPLE"
@@ -55,12 +56,7 @@ export type AIChatResponse = {
   provider: string;
   model: string;
   fallbackUsed: boolean;
-  aiUsage: {
-    messagesToday: number;
-    remainingToday: number;
-    dailyLimit: number;
-    costToday: number;
-  };
+  aiUsage: AIUsageSummary;
 };
 
 export async function chatWithAI(payload: AIChatRequest) {

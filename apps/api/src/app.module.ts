@@ -8,6 +8,7 @@ import { AIModule } from "./modules/ai/ai.module";
 import { AnalyticsModule } from "./modules/analytics/analytics.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { AdminModule } from "./modules/admin/admin.module";
+import { BillingModule } from "./modules/billing/billing.module";
 import { CoursesModule } from "./modules/courses/courses.module";
 import { CreatorsModule } from "./modules/creators/creators.module";
 import { DashboardModule } from "./modules/dashboard/dashboard.module";
@@ -31,6 +32,7 @@ import { UsersModule } from "./modules/users/users.module";
     PrismaModule,
     AuthModule,
     AdminModule,
+    BillingModule,
     CoursesModule,
     CreatorsModule,
     DashboardModule,

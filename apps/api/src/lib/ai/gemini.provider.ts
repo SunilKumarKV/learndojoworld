@@ -3,17 +3,18 @@ import { ServiceUnavailableException } from "@nestjs/common";
 import type { AIChatMessage, AIChatResponse, AIProvider } from "./ai.provider";
 
 const DEFAULT_MODEL = process.env.GEMINI_MODEL ?? "gemini-1.5-flash";
-const GEMINI_BASE_URL = "https://gemini.googleapis.com/v1/models";
+const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
+const GEMINI_COMPATIBILITY_MODEL = "gemini-flash-latest";
 
 type GeminiUsage = {
-  promptTokens?: number;
-  outputTokens?: number;
-  totalTokens?: number;
+  promptTokenCount?: number;
+  candidatesTokenCount?: number;
+  totalTokenCount?: number;
 };
 
 type GeminiResponse = {
   candidates?: unknown;
-  usage?: unknown;
+  usageMetadata?: unknown;
 };
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -26,29 +27,19 @@ function extractGeminiText(candidate: unknown): string {
   }
 
   const content = (candidate as { content?: unknown }).content;
-  if (!Array.isArray(content)) {
+  if (!isObject(content) || !Array.isArray(content.parts)) {
     return "";
   }
 
-  return content
+  return content.parts
     .map((item) => {
       if (!item || typeof item !== "object") {
         return "";
       }
 
-      const typedItem = item as { text?: unknown; segments?: unknown };
+      const typedItem = item as { text?: unknown };
       if (typeof typedItem.text === "string") {
         return typedItem.text;
-      }
-
-      if (Array.isArray(typedItem.segments)) {
-        return typedItem.segments
-          .map((segment) =>
-            segment && typeof (segment as { text?: unknown }).text === "string"
-              ? (segment as { text: string }).text
-              : "",
-          )
-          .join("");
       }
 
       return "";
@@ -72,46 +63,8 @@ export class GeminiProvider implements AIProvider {
   async chat(messages: AIChatMessage[]): Promise<AIChatResponse> {
     const prompt = messages.map((m) => `${m.role}: ${m.content}`).join("\n\n");
 
-    const url = `${GEMINI_BASE_URL}/${encodeURIComponent(this.model)}:generateMessage?key=${encodeURIComponent(
-      this.apiKey,
-    )}`;
-
     try {
-      const fetchFn = (globalThis as unknown as { fetch?: unknown }).fetch;
-      if (typeof fetchFn !== "function") {
-        throw new ServiceUnavailableException("Gemini provider is not available");
-      }
-
-      type FetchFn = (input: unknown, init?: unknown) => Promise<unknown>;
-      const response = await (fetchFn as FetchFn)(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          message: {
-            author: "user",
-            content: [{ type: "text", text: prompt }],
-          },
-          temperature: 0.7,
-          maxOutputTokens: 1024,
-        }),
-      });
-
-      if (
-        !isObject(response) ||
-        typeof response.ok !== "boolean" ||
-        typeof response.json !== "function"
-      ) {
-        throw new ServiceUnavailableException("Gemini provider error or unavailable");
-      }
-
-      const body = await (response.json as () => Promise<unknown>)();
-      const geminiBody = isObject(body) ? (body as GeminiResponse) : {};
-
-      if (!response.ok) {
-        throw new ServiceUnavailableException("Gemini provider error or unavailable");
-      }
+      const geminiBody = await this.generateContent(this.model, prompt);
 
       const candidate = Array.isArray(geminiBody.candidates)
         ? (geminiBody.candidates as unknown[])[0]
@@ -122,10 +75,12 @@ export class GeminiProvider implements AIProvider {
         throw new ServiceUnavailableException("Gemini returned an empty response.");
       }
 
-      const usage = isObject(geminiBody.usage) ? (geminiBody.usage as GeminiUsage) : {};
-      const promptTokens = Number(usage.promptTokens ?? 0);
-      const completionTokens = Number(usage.outputTokens ?? 0);
-      const totalTokens = Number(usage.totalTokens ?? promptTokens + completionTokens);
+      const usage = isObject(geminiBody.usageMetadata)
+        ? (geminiBody.usageMetadata as GeminiUsage)
+        : {};
+      const promptTokens = Number(usage.promptTokenCount ?? 0);
+      const completionTokens = Number(usage.candidatesTokenCount ?? 0);
+      const totalTokens = Number(usage.totalTokenCount ?? promptTokens + completionTokens);
 
       return {
         content,
@@ -144,4 +99,64 @@ export class GeminiProvider implements AIProvider {
       throw new ServiceUnavailableException("Gemini provider error or unavailable");
     }
   }
+
+  private async generateContent(model: string, prompt: string): Promise<GeminiResponse> {
+    const fetchFn = (globalThis as unknown as { fetch?: unknown }).fetch;
+    if (typeof fetchFn !== "function") {
+      throw new ServiceUnavailableException("Gemini provider is not available");
+    }
+
+    const url = `${GEMINI_BASE_URL}/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(
+      this.apiKey,
+    )}`;
+
+    type FetchFn = (input: unknown, init?: unknown) => Promise<unknown>;
+    const response = await (fetchFn as FetchFn)(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: prompt }],
+          },
+        ],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 1024,
+        },
+      }),
+    });
+
+    if (
+      !isObject(response) ||
+      typeof response.ok !== "boolean" ||
+      typeof response.json !== "function"
+    ) {
+      throw new ServiceUnavailableException("Gemini provider error or unavailable");
+    }
+
+    const body = await (response.json as () => Promise<unknown>)();
+    const geminiBody = isObject(body) ? (body as GeminiResponse) : {};
+
+    if (!response.ok) {
+      if (model !== GEMINI_COMPATIBILITY_MODEL && isModelNotFound(body)) {
+        return this.generateContent(GEMINI_COMPATIBILITY_MODEL, prompt);
+      }
+
+      throw new ServiceUnavailableException("Gemini provider error or unavailable");
+    }
+
+    return geminiBody;
+  }
+}
+
+function isModelNotFound(body: unknown) {
+  if (!isObject(body) || !isObject(body.error)) {
+    return false;
+  }
+
+  return body.error.status === "NOT_FOUND" || body.error.code === 404;
 }

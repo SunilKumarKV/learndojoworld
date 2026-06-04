@@ -7,6 +7,8 @@ async function main() {
   const bcryptModule = bcrypt as unknown as { hashSync: (value: string, salt: number) => string };
   const demoPasswordHash = bcryptModule.hashSync("learn123", 10);
 
+  await seedPlans();
+
   const demoUser = await prisma.user.upsert({
     create: {
       email: "demo@learndojoworld.com",
@@ -324,8 +326,65 @@ async function main() {
   }
 
   console.log(
-    "Seeded 3 published starter courses, quizzes, flashcards, and a demo learner account.",
+    "Seeded subscription plans, 3 published starter courses, quizzes, flashcards, and a demo learner account.",
   );
+}
+
+async function seedPlans() {
+  const plans = [
+    {
+      active: true,
+      aiDailyLimit: 20,
+      aiMonthlyLimit: 300,
+      code: "FREE" as const,
+      currency: "INR",
+      description: "Start learning with core AI tutor access.",
+      features: ["20 AI messages per day", "300 AI messages per month", "Course learning tools"],
+      monthlyPrice: 0,
+      name: "Free",
+      yearlyPrice: 0,
+    },
+    {
+      active: true,
+      aiDailyLimit: 200,
+      aiMonthlyLimit: 3000,
+      code: "PRO" as const,
+      currency: "INR",
+      description: "More AI tutor capacity for serious weekly learners.",
+      features: [
+        "200 AI messages per day",
+        "3,000 AI messages per month",
+        "Higher AI tutor limits",
+      ],
+      monthlyPrice: 49900,
+      name: "Pro",
+      yearlyPrice: 499900,
+    },
+    {
+      active: true,
+      aiDailyLimit: 1000,
+      aiMonthlyLimit: 15000,
+      code: "PREMIUM" as const,
+      currency: "INR",
+      description: "Large AI tutor allowance for power learners and creators.",
+      features: [
+        "1,000 AI messages per day",
+        "15,000 AI messages per month",
+        "Premium AI tutor capacity",
+      ],
+      monthlyPrice: 149900,
+      name: "Premium",
+      yearlyPrice: 1499900,
+    },
+  ];
+
+  for (const plan of plans) {
+    await prisma.plan.upsert({
+      create: plan,
+      update: plan,
+      where: { code: plan.code },
+    });
+  }
 }
 
 main()

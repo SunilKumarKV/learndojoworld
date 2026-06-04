@@ -8,9 +8,10 @@ import { OpenAIProvider } from "./openai.provider";
 import { GeminiProvider } from "./gemini.provider";
 
 type ProviderName = "OPENAI" | "GEMINI";
+type ProviderSlug = "openai" | "gemini";
 
 export type ProviderResult = AIChatResponse & {
-  provider: ProviderName;
+  provider: ProviderSlug;
   model: string;
   fallbackUsed?: boolean;
 };
@@ -55,13 +56,14 @@ export class AIProviderRouter {
     const tried: Array<{ name: ProviderName; err?: unknown }> = [];
 
     const tryProvider = async (name: ProviderName) => {
-      const provider = this.createProvider(name);
       try {
+        const provider = this.createProvider(name);
         const res = await provider.chat(messages);
         const modelKey = name === "OPENAI" ? "OPENAI_MODEL" : "GEMINI_MODEL";
+        const providerSlug: ProviderSlug = name === "GEMINI" ? "gemini" : "openai";
         return {
           ...res,
-          provider: name,
+          provider: providerSlug,
           model: this.env[modelKey] ?? "unknown",
         };
       } catch (err) {
