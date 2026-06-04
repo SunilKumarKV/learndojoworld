@@ -136,6 +136,82 @@ export class CreatorsService {
     }));
   }
 
+  async getPublicCreator(username: string) {
+    const normalizedUsername = username.trim().toLowerCase();
+    const creatorProfile = await this.prisma.creatorProfile.findFirst({
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+          },
+        },
+      },
+      where: {
+        user: {
+          isActive: true,
+          isSuspended: false,
+          role: UserRole.CREATOR,
+          username: normalizedUsername,
+        },
+      },
+    });
+
+    if (!creatorProfile) {
+      throw new NotFoundException("Creator profile not found.");
+    }
+
+    const courses = await this.prisma.course.findMany({
+      include: {
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+        _count: {
+          select: {
+            enrollments: true,
+            modules: true,
+          },
+        },
+      },
+      orderBy: { publishedAt: "desc" },
+      where: {
+        creatorId: creatorProfile.userId,
+        status: "PUBLISHED",
+      },
+    });
+
+    return {
+      bio: creatorProfile.bio,
+      displayName:
+        creatorProfile.displayName ?? creatorProfile.user.name ?? creatorProfile.user.username,
+      expertise: creatorProfile.expertise,
+      id: creatorProfile.id,
+      isVerified: creatorProfile.isVerified,
+      linkedinUrl: creatorProfile.linkedinUrl,
+      username: creatorProfile.user.username,
+      websiteUrl: creatorProfile.websiteUrl,
+      youtubeUrl: creatorProfile.youtubeUrl,
+      courses: courses.map((course) => ({
+        category: course.category,
+        currency: course.currency,
+        difficulty: course.difficulty,
+        enrollmentCount: course._count.enrollments,
+        id: course.id,
+        isFree: course.isFree,
+        moduleCount: course._count.modules,
+        price: course.price ? Number(course.price) : null,
+        slug: course.slug,
+        subtitle: course.subtitle,
+        title: course.title,
+      })),
+    };
+  }
+
   private async ensureCreatorProfile(userId: string) {
     const profile = await this.prisma.creatorProfile.findUnique({
       where: { userId },

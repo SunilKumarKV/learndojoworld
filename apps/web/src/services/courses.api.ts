@@ -48,6 +48,11 @@ export type CourseDetail = {
     name: string;
     slug: string;
   } | null;
+  creator: {
+    id: string;
+    username: string;
+    displayName: string;
+  } | null;
   modules: Array<{
     id: string;
     title: string;
