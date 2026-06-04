@@ -1,4 +1,4 @@
-import { IsEnum, IsString } from "class-validator";
+import { IsEnum, IsUUID } from "class-validator";
 
 export enum PaymentGateway {
   STRIPE = "stripe",
@@ -13,7 +13,7 @@ export class CheckoutRequestDto {
   @IsEnum(CheckoutType)
   type!: CheckoutType;
 
-  @IsString()
+  @IsUUID()
   courseId!: string;
 
   @IsEnum(PaymentGateway)

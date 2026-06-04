@@ -96,7 +96,7 @@ export class AuthService {
     }
 
     if (!user.isActive || user.isSuspended) {
-      throw new UnauthorizedException("User account is not active.");
+      throw new UnauthorizedException("Invalid credentials.");
     }
 
     const tokens = await this.issueTokens({

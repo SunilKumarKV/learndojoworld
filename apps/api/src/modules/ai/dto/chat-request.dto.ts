@@ -1,4 +1,4 @@
-import { IsEnum, IsOptional, IsString } from "class-validator";
+import { IsEnum, IsOptional, IsString, IsUUID, MaxLength, MinLength } from "class-validator";
 
 export enum AIInstruction {
   EXPLAIN_SIMPLE = "EXPLAIN_SIMPLE",
@@ -10,15 +10,15 @@ export enum AIInstruction {
 
 export class AIChatRequestDto {
   @IsOptional()
-  @IsString()
+  @IsUUID()
   conversationId?: string;
 
   @IsOptional()
-  @IsString()
+  @IsUUID()
   courseId?: string;
 
   @IsOptional()
-  @IsString()
+  @IsUUID()
   lessonId?: string;
 
   @IsOptional()
@@ -26,5 +26,7 @@ export class AIChatRequestDto {
   instruction?: AIInstruction;
 
   @IsString()
+  @MinLength(1)
+  @MaxLength(4000)
   message!: string;
 }
