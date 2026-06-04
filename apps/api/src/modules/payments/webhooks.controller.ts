@@ -1,9 +1,11 @@
 import { Controller, Headers, Post, RawBodyRequest, Req } from "@nestjs/common";
+import { SkipThrottle } from "@nestjs/throttler";
 import { Request } from "express";
 
 import { PaymentsService } from "./payments.service";
 
 @Controller("webhooks/payments")
+@SkipThrottle()
 export class WebhooksController {
   constructor(private readonly paymentsService: PaymentsService) {}
 

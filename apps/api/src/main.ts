@@ -1,6 +1,7 @@
 import { ValidationPipe } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { NestFactory } from "@nestjs/core";
+import helmet from "helmet";
 import "reflect-metadata";
 
 import { AppModule } from "./app.module";
@@ -18,6 +19,8 @@ async function bootstrap() {
   const logger = new AppLogger("Bootstrap");
   const webOrigin = configService.get("WEB_ORIGIN", { infer: true });
   const apiPort = configService.get("API_PORT", { infer: true });
+  const nodeEnv = configService.get("NODE_ENV", { infer: true });
+  const allowedOrigins = parseAllowedOrigins(webOrigin, nodeEnv);
 
   initSentry({
     AI_FALLBACK_PROVIDER: configService.get("AI_FALLBACK_PROVIDER", { infer: true }),
@@ -33,7 +36,7 @@ async function bootstrap() {
     NEXT_PUBLIC_RAZORPAY_KEY_ID: configService.get("NEXT_PUBLIC_RAZORPAY_KEY_ID", {
       infer: true,
     }),
-    NODE_ENV: configService.get("NODE_ENV", { infer: true }),
+    NODE_ENV: nodeEnv,
     OPENAI_API_KEY: configService.get("OPENAI_API_KEY", { infer: true }),
     OPENAI_MODEL: configService.get("OPENAI_MODEL", { infer: true }),
     RAZORPAY_KEY_ID: configService.get("RAZORPAY_KEY_ID", { infer: true }),
@@ -49,10 +52,42 @@ async function bootstrap() {
   });
 
   app.setGlobalPrefix(API_PREFIX);
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          baseUri: ["'self'"],
+          connectSrc: ["'self'", ...allowedOrigins],
+          frameAncestors: ["'none'"],
+          imgSrc: ["'self'", "data:", "https:"],
+          objectSrc: ["'none'"],
+          scriptSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          upgradeInsecureRequests: nodeEnv === "production" ? [] : null,
+        },
+      },
+      crossOriginEmbedderPolicy: false,
+      frameguard: { action: "deny" },
+      hidePoweredBy: true,
+      referrerPolicy: { policy: "no-referrer" },
+    }),
+  );
   app.use(requestLoggingMiddleware);
   app.enableCors({
     credentials: true,
-    origin: webOrigin,
+    origin(origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      if (nodeEnv !== "production") {
+        logger.warn("cors_origin_rejected", { origin });
+      }
+
+      callback(new Error("CORS origin is not allowed."));
+    },
   });
   app.useGlobalPipes(
     new ValidationPipe({
@@ -73,3 +108,16 @@ async function bootstrap() {
 }
 
 void bootstrap();
+
+function parseAllowedOrigins(webOrigin: string, nodeEnv: string) {
+  const origins = webOrigin
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+  if (nodeEnv !== "production") {
+    origins.push("http://localhost:3000", "http://127.0.0.1:3000");
+  }
+
+  return Array.from(new Set(origins)).filter((origin) => origin !== "*");
+}

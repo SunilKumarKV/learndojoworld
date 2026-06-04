@@ -9,6 +9,7 @@ import {
   Post,
   UseGuards,
 } from "@nestjs/common";
+import { Throttle } from "@nestjs/throttler";
 
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
@@ -22,6 +23,7 @@ export class AIController {
 
   @UseGuards(JwtAuthGuard)
   @Post("chat")
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @HttpCode(200)
   async chat(@CurrentUser() user: AuthenticatedUser, @Body() body: AIChatRequestDto) {
     const result = await this.aiService.chat(user.id, body);
