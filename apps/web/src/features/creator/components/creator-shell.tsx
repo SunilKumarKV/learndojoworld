@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, Compass, LayoutDashboard, Settings } from "lucide-react";
+import { BookOpen, Compass, IndianRupee, LayoutDashboard, Settings, Wallet } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -12,6 +12,8 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { href: "/creator/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/creator/courses", label: "Courses", icon: BookOpen },
+  { href: "/creator/revenue", label: "Revenue", icon: IndianRupee },
+  { href: "/creator/payouts", label: "Payouts", icon: Wallet },
   { href: "/creator/settings", label: "Settings", icon: Settings },
 ];
 

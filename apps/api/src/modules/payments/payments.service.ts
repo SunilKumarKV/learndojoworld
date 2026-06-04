@@ -532,6 +532,8 @@ export class PaymentsService {
             },
           },
         });
+
+        await this.createCreatorEarningForCoursePayment(tx, payment);
       }
 
       const metadata = this.readPaymentMetadata(payment.metadata);
@@ -573,6 +575,58 @@ export class PaymentsService {
         status: PaymentStatus.FAILED,
       },
       where: { id: payment.id },
+    });
+  }
+
+  private async createCreatorEarningForCoursePayment(
+    tx: Prisma.TransactionClient,
+    payment: {
+      amount: number;
+      courseId: string | null;
+      currency: string;
+      id: string;
+    },
+  ) {
+    if (!payment.courseId || payment.amount <= 0) {
+      return;
+    }
+
+    const course = await tx.course.findUnique({
+      select: {
+        creatorId: true,
+        isFree: true,
+      },
+      where: { id: payment.courseId },
+    });
+
+    if (!course?.creatorId || course.isFree) {
+      return;
+    }
+
+    const creatorProfile = await tx.creatorProfile.findUnique({
+      select: { id: true },
+      where: { userId: course.creatorId },
+    });
+
+    if (!creatorProfile) {
+      return;
+    }
+
+    const creatorAmount = Math.floor(payment.amount * 0.7);
+    const platformFee = payment.amount - creatorAmount;
+
+    await tx.creatorEarning.upsert({
+      create: {
+        courseId: payment.courseId,
+        creatorAmount,
+        creatorId: creatorProfile.id,
+        currency: payment.currency,
+        grossAmount: payment.amount,
+        paymentId: payment.id,
+        platformFee,
+      },
+      update: {},
+      where: { paymentId: payment.id },
     });
   }
 

@@ -1,5 +1,5 @@
 import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
-import type { Prisma } from "@prisma/client";
+import { PayoutRequestStatus, type Prisma } from "@prisma/client";
 
 import { PrismaService } from "../../lib/prisma/prisma.service";
 
@@ -136,6 +136,99 @@ export class AdminService {
     });
 
     return updatedCourse;
+  }
+
+  async getPayoutRequests() {
+    return this.prisma.payoutRequest.findMany({
+      include: {
+        creator: {
+          include: {
+            payoutProfile: true,
+            user: {
+              select: {
+                email: true,
+                id: true,
+                name: true,
+                username: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
+  async approvePayoutRequest(actorId: string, payoutRequestId: string) {
+    const payoutRequest = await this.prisma.payoutRequest.findUnique({
+      where: { id: payoutRequestId },
+    });
+
+    if (!payoutRequest) {
+      throw new NotFoundException("Payout request not found.");
+    }
+
+    if (payoutRequest.status !== PayoutRequestStatus.PENDING) {
+      throw new ConflictException("Only pending payout requests can be approved.");
+    }
+
+    const updatedPayoutRequest = await this.prisma.payoutRequest.update({
+      data: { status: PayoutRequestStatus.APPROVED },
+      where: { id: payoutRequestId },
+    });
+
+    await this.createAuditLog(
+      actorId,
+      "payout_request_approved",
+      "payout_request",
+      payoutRequestId,
+      {
+        amount: payoutRequest.amount,
+        creatorId: payoutRequest.creatorId,
+        currency: payoutRequest.currency,
+        previousStatus: payoutRequest.status,
+      },
+    );
+
+    return updatedPayoutRequest;
+  }
+
+  async rejectPayoutRequest(actorId: string, payoutRequestId: string, notes: string) {
+    const payoutRequest = await this.prisma.payoutRequest.findUnique({
+      where: { id: payoutRequestId },
+    });
+
+    if (!payoutRequest) {
+      throw new NotFoundException("Payout request not found.");
+    }
+
+    if (payoutRequest.status !== PayoutRequestStatus.PENDING) {
+      throw new ConflictException("Only pending payout requests can be rejected.");
+    }
+
+    const updatedPayoutRequest = await this.prisma.payoutRequest.update({
+      data: {
+        notes,
+        status: PayoutRequestStatus.REJECTED,
+      },
+      where: { id: payoutRequestId },
+    });
+
+    await this.createAuditLog(
+      actorId,
+      "payout_request_rejected",
+      "payout_request",
+      payoutRequestId,
+      {
+        amount: payoutRequest.amount,
+        creatorId: payoutRequest.creatorId,
+        currency: payoutRequest.currency,
+        notes,
+        previousStatus: payoutRequest.status,
+      },
+    );
+
+    return updatedPayoutRequest;
   }
 
   private async createAuditLog(

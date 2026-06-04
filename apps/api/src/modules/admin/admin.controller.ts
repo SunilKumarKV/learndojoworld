@@ -7,10 +7,11 @@ import { Roles } from "../auth/decorators/roles.decorator";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import type { AuthenticatedUser } from "../auth/types/authenticated-user.type";
 import { AdminService } from "./admin.service";
+import { RejectPayoutRequestDto } from "./dto/reject-payout-request.dto";
 import { RejectCourseDto } from "./dto/reject-course.dto";
 
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN)
+@Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
 @Controller("admin")
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
@@ -42,5 +43,27 @@ export class AdminController {
     @Body() payload: RejectCourseDto,
   ) {
     return this.adminService.rejectCourse(user.id, courseId, payload.reason);
+  }
+
+  @Get("payout-requests")
+  getPayoutRequests() {
+    return this.adminService.getPayoutRequests();
+  }
+
+  @Post("payout-requests/:id/approve")
+  approvePayoutRequest(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param("id") payoutRequestId: string,
+  ) {
+    return this.adminService.approvePayoutRequest(user.id, payoutRequestId);
+  }
+
+  @Post("payout-requests/:id/reject")
+  rejectPayoutRequest(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param("id") payoutRequestId: string,
+    @Body() payload: RejectPayoutRequestDto,
+  ) {
+    return this.adminService.rejectPayoutRequest(user.id, payoutRequestId, payload.notes);
   }
 }
