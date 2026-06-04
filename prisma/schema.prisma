@@ -11,6 +11,7 @@ enum UserRole {
   LEARNER
   CREATOR
   ADMIN
+  SUPER_ADMIN
 }
 
 enum PlanCode {
@@ -113,18 +114,21 @@ model Profile {
 }
 
 model CreatorProfile {
-  id          String   @id @default(uuid()) @db.Uuid
-  userId      String   @unique @db.Uuid
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  displayName String?
-  bio         String?
-  expertise   String[] @default([])
-  websiteUrl  String?
-  linkedinUrl String?
-  youtubeUrl  String?
-  isVerified  Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String           @id @default(uuid()) @db.Uuid
+  userId         String           @unique @db.Uuid
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  displayName    String?
+  bio            String?
+  expertise      String[]         @default([])
+  websiteUrl     String?
+  linkedinUrl    String?
+  youtubeUrl     String?
+  isVerified     Boolean          @default(false)
+  earnings       CreatorEarning[]
+  payoutProfile  PayoutProfile?
+  payoutRequests PayoutRequest[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 
   @@index([isVerified])
 }
@@ -168,6 +172,7 @@ model Course {
   quizzes            Quiz[]
   flashcards         Flashcard[]
   payments           Payment[]
+  creatorEarnings    CreatorEarning[]
   aiConversations    AIConversation[]   @relation("CourseAIConversations")
   aiMessages         AIMessage[]        @relation("CourseAIMessages")
 
@@ -405,28 +410,78 @@ model AuditLog {
 }
 
 model Payment {
-  id               String         @id @default(uuid()) @db.Uuid
-  userId           String         @db.Uuid
-  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  courseId         String?        @db.Uuid
-  course           Course?        @relation(fields: [courseId], references: [id], onDelete: SetNull)
-  subscriptionId   String?        @db.Uuid
-  subscription     Subscription?  @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  id               String          @id @default(uuid()) @db.Uuid
+  userId           String          @db.Uuid
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId         String?         @db.Uuid
+  course           Course?         @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  subscriptionId   String?         @db.Uuid
+  subscription     Subscription?   @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
   gateway          PaymentGateway
-  gatewayOrderId   String?        @unique
-  gatewayPaymentId String?        @unique
+  gatewayOrderId   String?         @unique
+  gatewayPaymentId String?         @unique
   amount           Int
-  currency         String         @default("USD")
-  status           PaymentStatus  @default(PENDING)
+  currency         String          @default("USD")
+  status           PaymentStatus   @default(PENDING)
   metadata         Json?
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  creatorEarning   CreatorEarning?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 
   @@index([userId, createdAt])
   @@index([status])
   @@index([gateway])
   @@index([courseId])
   @@index([subscriptionId])
+}
+
+model CreatorEarning {
+  id            String         @id @default(uuid()) @db.Uuid
+  creatorId     String         @db.Uuid
+  creator       CreatorProfile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  courseId      String         @db.Uuid
+  course        Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  paymentId     String         @unique @db.Uuid
+  payment       Payment        @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  grossAmount   Int
+  platformFee   Int
+  creatorAmount Int
+  currency      String
+  createdAt     DateTime       @default(now())
+
+  @@index([creatorId, createdAt])
+  @@index([courseId])
+  @@index([currency])
+}
+
+model PayoutProfile {
+  id           String         @id @default(uuid()) @db.Uuid
+  creatorId    String         @unique @db.Uuid
+  creator      CreatorProfile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  legalName    String
+  country      String
+  payoutMethod PayoutMethod
+  bankName     String?
+  accountLast4 String?
+  upiId        String?
+  paypalEmail  String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+model PayoutRequest {
+  id        String              @id @default(uuid()) @db.Uuid
+  creatorId String              @db.Uuid
+  creator   CreatorProfile      @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  amount    Int
+  currency  String
+  status    PayoutRequestStatus @default(PENDING)
+  notes     String?
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  @@index([creatorId, status])
+  @@index([status, createdAt])
 }
 
 enum PaymentGateway {
@@ -440,6 +495,19 @@ enum PaymentStatus {
   FAILED
   REFUNDED
   CANCELLED
+}
+
+enum PayoutMethod {
+  BANK
+  UPI
+  PAYPAL
+}
+
+enum PayoutRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PAID
 }
 
 model Plan {

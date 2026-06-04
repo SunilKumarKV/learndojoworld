@@ -7,6 +7,7 @@ import { AdminRouteGuard } from "@/features/admin/components/admin-route-guard";
 const navItems = [
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/courses", label: "Course review" },
+  { href: "/admin/payouts", label: "Payout review" },
 ];
 
 export default function AdminLayout({ children }: Readonly<{ children: ReactNode }>) {
@@ -40,8 +41,8 @@ export default function AdminLayout({ children }: Readonly<{ children: ReactNode
               })}
             </nav>
             <div className="mt-8 rounded-3xl bg-slate-50 p-5 text-sm leading-6 text-slate-600">
-              Admin moderation tools for creator course review. Actions are tracked in the audit
-              log.
+              Admin tools for creator course review and payout request decisions. Actions are
+              tracked in the audit log.
             </div>
           </aside>
           <main className="min-h-screen flex-1">{children}</main>
