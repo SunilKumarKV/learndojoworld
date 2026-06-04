@@ -1,7 +1,6 @@
 "use client";
 
 import { BookOpen, IndianRupee, Plus, Star, Users } from "lucide-react";
-import type { Route } from "next";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -12,7 +11,7 @@ import { useCreatorDashboard } from "@/features/creator/hooks/use-creator";
 import { ErrorState } from "@/features/dashboard/components/error-state";
 import { LoadingState } from "@/features/dashboard/components/loading-state";
 
-const newCourseRoute = "/creator/courses/new" as Route;
+const newCourseRoute = "/creator/courses/new";
 
 export default function CreatorDashboardPage() {
   const router = useRouter();

@@ -1,7 +1,6 @@
 "use client";
 
 import { BookOpen, Edit3, Eye, Plus } from "lucide-react";
-import type { Route } from "next";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
@@ -10,7 +9,7 @@ import { useCreatorCourses } from "@/features/creator/hooks/use-creator";
 import { ErrorState } from "@/features/dashboard/components/error-state";
 import { LoadingState } from "@/features/dashboard/components/loading-state";
 
-const newCourseRoute = "/creator/courses/new" as Route;
+const newCourseRoute = "/creator/courses/new";
 
 export default function CreatorCoursesPage() {
   const { data: courses = [], error, isError, isLoading } = useCreatorCourses();
@@ -85,13 +84,13 @@ export default function CreatorCoursesPage() {
                     {course.difficulty}
                   </span>
                   <Button asChild size="sm" variant="secondary">
-                    <Link href={`/creator/courses/${course.id}/edit` as Route}>
+                    <Link href={`/creator/courses/${course.id}/edit`}>
                       <Edit3 aria-hidden className="h-4 w-4" />
                       Edit
                     </Link>
                   </Button>
                   <Button asChild size="sm" variant="ghost">
-                    <Link href={`/creator/courses/${course.id}/preview` as Route}>
+                    <Link href={`/creator/courses/${course.id}/preview`}>
                       <Eye aria-hidden className="h-4 w-4" />
                       Preview
                     </Link>
