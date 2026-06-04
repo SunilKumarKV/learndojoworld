@@ -12,6 +12,7 @@ import { LoadingState } from "@/features/dashboard/components/loading-state";
 import { useDashboard } from "@/features/dashboard/hooks/use-dashboard";
 import { useSession } from "@/hooks/use-session";
 import { getActivityTimeline, getGamificationSummary, trackEvent } from "@/services/analytics.api";
+import { DashboardReferralCard } from "@/features/dashboard/components/dashboard-referral-card";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -136,6 +137,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
+          <DashboardReferralCard />
           <Card>
             <CardHeader>
               <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Daily goal</p>
