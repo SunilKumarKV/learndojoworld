@@ -1,5 +1,10 @@
-import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
-import { PayoutRequestStatus, type Prisma } from "@prisma/client";
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  ConflictException,
+} from "@nestjs/common";
+import { RewardStatus, PayoutRequestStatus, type Prisma } from "@prisma/client";
 
 import { PrismaService } from "../../lib/prisma/prisma.service";
 
@@ -229,6 +234,128 @@ export class AdminService {
     );
 
     return updatedPayoutRequest;
+  }
+
+  // ==========================================
+  // REFERRALS & REWARDS
+  // ==========================================
+
+  async getReferrals() {
+    const [events, rewards] = await Promise.all([
+      this.prisma.referralEvent.findMany({
+        orderBy: { createdAt: "desc" },
+        include: {
+          inviter: { select: { id: true, name: true, email: true } },
+          invited: { select: { id: true, name: true, email: true } },
+          referralCode: true,
+        },
+      }),
+      this.prisma.referralReward.findMany({
+        orderBy: { createdAt: "desc" },
+        include: {
+          user: { select: { id: true, name: true, email: true } },
+          referralEvent: {
+            include: {
+              inviter: { select: { name: true, email: true } },
+              invited: { select: { name: true, email: true } },
+            },
+          },
+        },
+      }),
+    ]);
+    return { events, rewards };
+  }
+
+  async approveReward(id: string, adminId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const reward = await tx.referralReward.findUnique({ where: { id } });
+      if (!reward) throw new NotFoundException("Reward not found.");
+
+      if (reward.status !== RewardStatus.PENDING) {
+        throw new BadRequestException("Only PENDING rewards can be approved.");
+      }
+
+      const updated = await tx.referralReward.update({
+        where: { id },
+        data: { status: RewardStatus.APPROVED },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorId: adminId,
+          action: "APPROVE_REFERRAL_REWARD",
+          entity: "ReferralReward",
+          entityId: id,
+          metadata: { previousStatus: reward.status, newStatus: RewardStatus.APPROVED },
+        },
+      });
+
+      return updated;
+    });
+  }
+
+  async rejectReward(id: string, reason: string, adminId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const reward = await tx.referralReward.findUnique({ where: { id } });
+      if (!reward) throw new NotFoundException("Reward not found.");
+
+      if (reward.status === RewardStatus.REJECTED || reward.status === RewardStatus.GRANTED) {
+        throw new BadRequestException(
+          "Cannot reject a reward that is already finalized (GRANTED or REJECTED).",
+        );
+      }
+
+      const updated = await tx.referralReward.update({
+        where: { id },
+        data: { status: RewardStatus.REJECTED, notes: reason },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorId: adminId,
+          action: "REJECT_REFERRAL_REWARD",
+          entity: "ReferralReward",
+          entityId: id,
+          metadata: { previousStatus: reward.status, newStatus: RewardStatus.REJECTED, reason },
+        },
+      });
+
+      return updated;
+    });
+  }
+
+  async grantReward(id: string, adminId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const reward = await tx.referralReward.findUnique({ where: { id } });
+      if (!reward) throw new NotFoundException("Reward not found.");
+
+      if (reward.status !== RewardStatus.APPROVED) {
+        throw new BadRequestException("Only APPROVED rewards can be granted.");
+      }
+
+      const updated = await tx.referralReward.update({
+        where: { id },
+        data: { status: RewardStatus.GRANTED },
+      });
+
+      // DO NOT activate the subscription yet (per instructions)
+
+      await tx.auditLog.create({
+        data: {
+          actorId: adminId,
+          action: "GRANT_REFERRAL_REWARD",
+          entity: "ReferralReward",
+          entityId: id,
+          metadata: {
+            previousStatus: reward.status,
+            newStatus: RewardStatus.GRANTED,
+            note: "Subscription activation pending future implementation",
+          },
+        },
+      });
+
+      return updated;
+    });
   }
 
   private async createAuditLog(

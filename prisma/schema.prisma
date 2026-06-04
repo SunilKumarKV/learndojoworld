@@ -676,6 +676,7 @@ model ReferralReward {
   rewardType  String
   rewardValue String
   status      RewardStatus @default(PENDING)
+  notes       String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from "@nestjs/common";
+import { Controller, Get, Post, Body, Param, UseGuards } from "@nestjs/common";
 import { UserRole } from "@prisma/client";
+import { RejectRewardDto } from "./dto/reject-reward.dto";
 
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
@@ -65,5 +66,33 @@ export class AdminController {
     @Body() payload: RejectPayoutRequestDto,
   ) {
     return this.adminService.rejectPayoutRequest(user.id, payoutRequestId, payload.notes);
+  }
+
+  @Get("referrals")
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  async getReferrals() {
+    return this.adminService.getReferrals();
+  }
+
+  @Post("referrals/rewards/:id/approve")
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  async approveReward(@Param("id") id: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.adminService.approveReward(id, user.id);
+  }
+
+  @Post("referrals/rewards/:id/reject")
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  async rejectReward(
+    @Param("id") id: string,
+    @Body() dto: RejectRewardDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.adminService.rejectReward(id, dto.reason, user.id);
+  }
+
+  @Post("referrals/rewards/:id/grant")
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  async grantReward(@Param("id") id: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.adminService.grantReward(id, user.id);
   }
 }

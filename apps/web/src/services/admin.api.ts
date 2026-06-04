@@ -1,5 +1,29 @@
 import { apiClient } from "@/services/api-client";
 
+export interface AdminReferralData {
+  events: Array<{
+    id: string;
+    status: string;
+    createdAt: string;
+    inviter: { name: string; email: string };
+    invited: { name: string; email: string };
+    referralCode: { code: string };
+  }>;
+  rewards: Array<{
+    id: string;
+    rewardType: string;
+    rewardValue: string;
+    status: "PENDING" | "APPROVED" | "GRANTED" | "REJECTED";
+    notes: string | null;
+    createdAt: string;
+    user: { name: string; email: string };
+    referralEvent: {
+      inviter: { name: string };
+      invited: { name: string };
+    };
+  }>;
+}
+
 export type AdminDashboardData = {
   pendingCourses: number;
   publishedCourses: number;
@@ -88,3 +112,29 @@ export async function rejectCourse(id: string, reason: string) {
   });
   return response.data;
 }
+
+export const adminApi = {
+  getReferrals: async () => {
+    const response = await apiClient<AdminReferralData>("/admin/referrals");
+    return response.data;
+  },
+  approveReferralReward: async (id: string) => {
+    const response = await apiClient<null>(`/admin/referrals/rewards/${id}/approve`, {
+      method: "POST",
+    });
+    return response.data;
+  },
+  rejectReferralReward: async (id: string, reason: string) => {
+    const response = await apiClient<null>(`/admin/referrals/rewards/${id}/reject`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    });
+    return response.data;
+  },
+  grantReferralReward: async (id: string) => {
+    const response = await apiClient<null>(`/admin/referrals/rewards/${id}/grant`, {
+      method: "POST",
+    });
+    return response.data;
+  },
+};
