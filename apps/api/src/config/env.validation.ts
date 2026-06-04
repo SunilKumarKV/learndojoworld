@@ -19,6 +19,10 @@ export type EnvironmentVariables = {
   RAZORPAY_KEY_SECRET: string | undefined;
   RAZORPAY_WEBHOOK_SECRET: string | undefined;
   NEXT_PUBLIC_RAZORPAY_KEY_ID: string | undefined;
+  SENTRY_DSN: string | undefined;
+  SENTRY_ENVIRONMENT: string | undefined;
+  SENTRY_TRACES_SAMPLE_RATE: number;
+  LOG_LEVEL: string;
 };
 
 const DEFAULTS = {
@@ -26,6 +30,8 @@ const DEFAULTS = {
   NODE_ENV: "development",
   WEB_ORIGIN: "http://localhost:3000",
   AI_PROVIDER: "OPENAI",
+  LOG_LEVEL: "info",
+  SENTRY_TRACES_SAMPLE_RATE: 0,
 } as const;
 
 const REQUIRED_KEYS = ["DATABASE_URL", "REDIS_URL", "JWT_SECRET", "JWT_REFRESH_SECRET"] as const;
@@ -58,6 +64,11 @@ export function validateEnvironment(config: Record<string, unknown>): Environmen
     RAZORPAY_KEY_SECRET: readString(config.RAZORPAY_KEY_SECRET) || undefined,
     RAZORPAY_WEBHOOK_SECRET: readString(config.RAZORPAY_WEBHOOK_SECRET) || undefined,
     NEXT_PUBLIC_RAZORPAY_KEY_ID: readString(config.NEXT_PUBLIC_RAZORPAY_KEY_ID) || undefined,
+    SENTRY_DSN: readString(config.SENTRY_DSN) || undefined,
+    SENTRY_ENVIRONMENT: readString(config.SENTRY_ENVIRONMENT) || undefined,
+    SENTRY_TRACES_SAMPLE_RATE:
+      readNumber(config.SENTRY_TRACES_SAMPLE_RATE) ?? DEFAULTS.SENTRY_TRACES_SAMPLE_RATE,
+    LOG_LEVEL: readString(config.LOG_LEVEL) || DEFAULTS.LOG_LEVEL,
   };
 }
 
@@ -73,4 +84,14 @@ function readPort(value: unknown) {
   }
 
   return port;
+}
+
+function readNumber(value: unknown) {
+  const parsed = Number(value);
+
+  if (!Number.isFinite(parsed)) {
+    return undefined;
+  }
+
+  return parsed;
 }
