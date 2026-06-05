@@ -5,7 +5,7 @@ import {
   UnauthorizedException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { createHmac, timingSafeEqual } from "crypto";
+import { createHash, createHmac, timingSafeEqual } from "crypto";
 import {
   PaymentGateway,
   PaymentStatus,
@@ -55,6 +55,7 @@ type PaymentMetadata = {
 };
 
 type StripeWebhookEvent = {
+  id?: string;
   type?: string;
   data?: {
     object?: {
@@ -70,6 +71,7 @@ type StripeWebhookEvent = {
 };
 
 type RazorpayWebhookEvent = {
+  account_id?: string;
   event?: string;
   payload?: {
     payment?: {
@@ -99,6 +101,18 @@ type WebhookPaymentLookup = {
   gatewayOrderId: string | undefined;
   gatewayPaymentId: string | undefined;
   paymentId: string | undefined;
+};
+
+const WEBHOOK_EVENT_STATUS = {
+  FAILED: "FAILED",
+  IGNORED: "IGNORED",
+  PROCESSED: "PROCESSED",
+  RECEIVED: "RECEIVED",
+} as const;
+
+type WebhookMutationResult = {
+  paymentId?: string | null;
+  status: typeof WEBHOOK_EVENT_STATUS.IGNORED | typeof WEBHOOK_EVENT_STATUS.PROCESSED;
 };
 
 @Injectable()
@@ -245,65 +259,100 @@ export class PaymentsService {
     this.verifyStripeSignature(signature, rawBody);
 
     const event = this.parseJson<StripeWebhookEvent>(rawBody);
+    const eventId = this.requireWebhookEventId(event.id, "Stripe");
+    const eventType = event.type ?? "unknown";
     const object = event.data?.object;
     const paymentId = object?.metadata?.ldwPaymentId ?? object?.metadata?.paymentId;
     const gatewayPaymentId = object?.payment_intent ?? object?.id;
     const gatewayOrderId = object?.client_reference_id;
 
-    if (event.type === "checkout.session.completed" || event.type === "payment_intent.succeeded") {
-      await this.markPaymentSuccess({
+    return this.processWebhookEvent({
+      eventId,
+      eventType,
+      paymentLookup: {
         gateway: PaymentGateway.STRIPE,
         gatewayOrderId,
         gatewayPaymentId,
         paymentId,
-      });
-    }
+      },
+      processor: async (tx) => {
+        if (
+          eventType === "checkout.session.completed" ||
+          eventType === "payment_intent.succeeded"
+        ) {
+          return this.markPaymentSuccess(tx, {
+            gateway: PaymentGateway.STRIPE,
+            gatewayOrderId,
+            gatewayPaymentId,
+            paymentId,
+          });
+        }
 
-    if (
-      event.type === "payment_intent.payment_failed" ||
-      event.type === "checkout.session.expired"
-    ) {
-      await this.markPaymentFailed({
-        gateway: PaymentGateway.STRIPE,
-        gatewayOrderId,
-        gatewayPaymentId,
-        paymentId,
-      });
-    }
+        if (
+          eventType === "payment_intent.payment_failed" ||
+          eventType === "checkout.session.expired"
+        ) {
+          return this.markPaymentFailed(tx, {
+            gateway: PaymentGateway.STRIPE,
+            gatewayOrderId,
+            gatewayPaymentId,
+            paymentId,
+          });
+        }
 
-    return { received: true };
+        return { status: WEBHOOK_EVENT_STATUS.IGNORED };
+      },
+      provider: PaymentGateway.STRIPE,
+      rawBody,
+    });
   }
 
   async handleRazorpayWebhook(signature: string | undefined, rawBody: string) {
     this.verifyRazorpaySignature(signature, rawBody);
 
     const event = this.parseJson<RazorpayWebhookEvent>(rawBody);
+    const eventType = event.event ?? "unknown";
     const payment = event.payload?.payment?.entity;
     const order = event.payload?.order?.entity;
+    const eventId = this.deriveRazorpayEventId(event, rawBody);
     const paymentId =
       payment?.notes?.ldwPaymentId ?? payment?.notes?.paymentId ?? order?.notes?.ldwPaymentId;
     const gatewayPaymentId = payment?.id;
     const gatewayOrderId = payment?.order_id ?? order?.id;
 
-    if (event.event === "payment.captured" || event.event === "payment.authorized") {
-      await this.markPaymentSuccess({
+    return this.processWebhookEvent({
+      eventId,
+      eventType,
+      paymentLookup: {
         gateway: PaymentGateway.RAZORPAY,
         gatewayOrderId,
         gatewayPaymentId,
         paymentId,
-      });
-    }
+      },
+      processor: async (tx) => {
+        if (eventType === "payment.captured" || eventType === "payment.authorized") {
+          return this.markPaymentSuccess(tx, {
+            gateway: PaymentGateway.RAZORPAY,
+            gatewayOrderId,
+            gatewayPaymentId,
+            paymentId,
+          });
+        }
 
-    if (event.event === "payment.failed") {
-      await this.markPaymentFailed({
-        gateway: PaymentGateway.RAZORPAY,
-        gatewayOrderId,
-        gatewayPaymentId,
-        paymentId,
-      });
-    }
+        if (eventType === "payment.failed") {
+          return this.markPaymentFailed(tx, {
+            gateway: PaymentGateway.RAZORPAY,
+            gatewayOrderId,
+            gatewayPaymentId,
+            paymentId,
+          });
+        }
 
-    return { received: true };
+        return { status: WEBHOOK_EVENT_STATUS.IGNORED };
+      },
+      provider: PaymentGateway.RAZORPAY,
+      rawBody,
+    });
   }
 
   private async buildCheckoutResponse(payment: {
@@ -501,81 +550,101 @@ export class PaymentsService {
     throw new UnauthorizedException(`${key} is not configured.`);
   }
 
-  private async markPaymentSuccess(args: WebhookPaymentLookup) {
-    const payment = await this.findWebhookPayment(args);
+  private async markPaymentSuccess(
+    tx: Prisma.TransactionClient,
+    args: WebhookPaymentLookup,
+  ): Promise<WebhookMutationResult> {
+    const payment = await this.findWebhookPayment(tx, args);
 
     if (!payment || payment.status === PaymentStatus.SUCCESS) {
-      return;
+      return {
+        paymentId: payment?.id ?? args.paymentId ?? null,
+        status: payment ? WEBHOOK_EVENT_STATUS.PROCESSED : WEBHOOK_EVENT_STATUS.IGNORED,
+      };
     }
 
-    await this.prisma.$transaction(async (tx) => {
-      await tx.payment.update({
-        data: {
-          gatewayPaymentId: args.gatewayPaymentId ?? payment.gatewayPaymentId,
-          status: PaymentStatus.SUCCESS,
+    await tx.payment.update({
+      data: {
+        gatewayPaymentId: args.gatewayPaymentId ?? payment.gatewayPaymentId,
+        status: PaymentStatus.SUCCESS,
+      },
+      where: { id: payment.id },
+    });
+
+    if (payment.courseId) {
+      await tx.enrollment.upsert({
+        create: {
+          courseId: payment.courseId,
+          progressPercent: 0,
+          userId: payment.userId,
         },
-        where: { id: payment.id },
+        update: {},
+        where: {
+          userId_courseId: {
+            courseId: payment.courseId,
+            userId: payment.userId,
+          },
+        },
       });
 
-      if (payment.courseId) {
-        await tx.enrollment.upsert({
-          create: {
-            courseId: payment.courseId,
-            progressPercent: 0,
-            userId: payment.userId,
-          },
-          update: {},
-          where: {
-            userId_courseId: {
-              courseId: payment.courseId,
-              userId: payment.userId,
-            },
-          },
-        });
-
-        await this.createCreatorEarningForCoursePayment(tx, payment);
-      }
-
-      const metadata = this.readPaymentMetadata(payment.metadata);
-      const subscriptionId = payment.subscriptionId ?? metadata.subscriptionId;
-
-      if (metadata.checkoutType === "SUBSCRIPTION" && subscriptionId) {
-        const activatedSubscription = await tx.subscription.update({
-          data: {
-            status: SubscriptionStatus.ACTIVE,
-          },
-          where: { id: subscriptionId },
-        });
-
-        await tx.subscription.updateMany({
-          data: {
-            cancelledAt: new Date(),
-            status: SubscriptionStatus.EXPIRED,
-          },
-          where: {
-            id: { not: activatedSubscription.id },
-            status: SubscriptionStatus.ACTIVE,
-            userId: payment.userId,
-          },
-        });
-      }
-    });
-  }
-
-  private async markPaymentFailed(args: WebhookPaymentLookup) {
-    const payment = await this.findWebhookPayment(args);
-
-    if (!payment || payment.status === PaymentStatus.SUCCESS) {
-      return;
+      await this.createCreatorEarningForCoursePayment(tx, payment);
     }
 
-    await this.prisma.payment.update({
+    const metadata = this.readPaymentMetadata(payment.metadata);
+    const subscriptionId = payment.subscriptionId ?? metadata.subscriptionId;
+
+    if (metadata.checkoutType === "SUBSCRIPTION" && subscriptionId) {
+      const activatedSubscription = await tx.subscription.update({
+        data: {
+          status: SubscriptionStatus.ACTIVE,
+        },
+        where: { id: subscriptionId },
+      });
+
+      await tx.subscription.updateMany({
+        data: {
+          cancelledAt: new Date(),
+          status: SubscriptionStatus.EXPIRED,
+        },
+        where: {
+          id: { not: activatedSubscription.id },
+          status: SubscriptionStatus.ACTIVE,
+          userId: payment.userId,
+        },
+      });
+    }
+
+    return {
+      paymentId: payment.id,
+      status: WEBHOOK_EVENT_STATUS.PROCESSED,
+    };
+  }
+
+  private async markPaymentFailed(
+    tx: Prisma.TransactionClient,
+    args: WebhookPaymentLookup,
+  ): Promise<WebhookMutationResult> {
+    const payment = await this.findWebhookPayment(tx, args);
+
+    if (!payment || payment.status === PaymentStatus.SUCCESS) {
+      return {
+        paymentId: payment?.id ?? args.paymentId ?? null,
+        status: payment ? WEBHOOK_EVENT_STATUS.PROCESSED : WEBHOOK_EVENT_STATUS.IGNORED,
+      };
+    }
+
+    await tx.payment.update({
       data: {
         gatewayPaymentId: args.gatewayPaymentId ?? payment.gatewayPaymentId,
         status: PaymentStatus.FAILED,
       },
       where: { id: payment.id },
     });
+
+    return {
+      paymentId: payment.id,
+      status: WEBHOOK_EVENT_STATUS.PROCESSED,
+    };
   }
 
   private async createCreatorEarningForCoursePayment(
@@ -630,21 +699,21 @@ export class PaymentsService {
     });
   }
 
-  private async findWebhookPayment(args: WebhookPaymentLookup) {
+  private async findWebhookPayment(tx: Prisma.TransactionClient, args: WebhookPaymentLookup) {
     if (args.paymentId) {
-      const payment = await this.prisma.payment.findUnique({ where: { id: args.paymentId } });
+      const payment = await tx.payment.findUnique({ where: { id: args.paymentId } });
       if (payment?.gateway === args.gateway) return payment;
     }
 
     if (args.gatewayPaymentId) {
-      const payment = await this.prisma.payment.findUnique({
+      const payment = await tx.payment.findUnique({
         where: { gatewayPaymentId: args.gatewayPaymentId },
       });
       if (payment?.gateway === args.gateway) return payment;
     }
 
     if (args.gatewayOrderId) {
-      return this.prisma.payment.findFirst({
+      return tx.payment.findFirst({
         where: {
           gateway: args.gateway,
           gatewayOrderId: args.gatewayOrderId,
@@ -669,6 +738,44 @@ export class PaymentsService {
     } catch {
       throw new BadRequestException("Webhook payload is not valid JSON.");
     }
+  }
+
+  private requireWebhookEventId(eventId: string | undefined, provider: string) {
+    const normalized = eventId?.trim();
+
+    if (!normalized) {
+      throw new BadRequestException(`${provider} webhook event id is required.`);
+    }
+
+    return normalized;
+  }
+
+  private deriveRazorpayEventId(event: RazorpayWebhookEvent, rawBody: string) {
+    const eventType = event.event ?? "unknown";
+    const paymentId = event.payload?.payment?.entity?.id;
+    const orderId = event.payload?.payment?.entity?.order_id ?? event.payload?.order?.entity?.id;
+    const accountId = event.account_id;
+    const stableId = [accountId, eventType, paymentId, orderId].filter(Boolean).join(":");
+
+    if (stableId) {
+      return stableId;
+    }
+
+    return `${eventType}:${this.hashRawBody(rawBody)}`;
+  }
+
+  private hashRawBody(rawBody: string) {
+    return createHash("sha256").update(rawBody).digest("hex");
+  }
+
+  private isUniqueConstraintViolation(err: unknown) {
+    return err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002";
+  }
+
+  private safeErrorMessage(err: unknown) {
+    const message = err instanceof Error ? err.message : "Webhook processing failed.";
+
+    return message.slice(0, 500);
   }
 
   private readPaymentMetadata(metadata: Prisma.JsonValue | null): PaymentMetadata {
@@ -703,6 +810,145 @@ export class PaymentsService {
     }
 
     return parsed;
+  }
+
+  private async processWebhookEvent(args: {
+    eventId: string;
+    eventType: string;
+    paymentLookup: WebhookPaymentLookup;
+    processor: (tx: Prisma.TransactionClient) => Promise<WebhookMutationResult>;
+    provider: PaymentGateway;
+    rawBody: string;
+  }) {
+    const rawHash = this.hashRawBody(args.rawBody);
+
+    const existing = await this.prisma.webhookEvent.findUnique({
+      where: {
+        provider_eventId: {
+          eventId: args.eventId,
+          provider: args.provider,
+        },
+      },
+    });
+
+    if (
+      existing?.status === WEBHOOK_EVENT_STATUS.PROCESSED ||
+      existing?.status === WEBHOOK_EVENT_STATUS.IGNORED
+    ) {
+      return {
+        duplicate: true,
+        received: true,
+        status: existing.status.toLowerCase(),
+      };
+    }
+
+    try {
+      if (existing) {
+        await this.prisma.webhookEvent.update({
+          data: {
+            errorMessage: null,
+            eventType: args.eventType,
+            rawHash,
+            status: WEBHOOK_EVENT_STATUS.RECEIVED,
+          },
+          where: { id: existing.id },
+        });
+      } else {
+        await this.prisma.webhookEvent.create({
+          data: {
+            eventId: args.eventId,
+            eventType: args.eventType,
+            provider: args.provider,
+            rawHash,
+            status: WEBHOOK_EVENT_STATUS.RECEIVED,
+          },
+        });
+      }
+    } catch (err: unknown) {
+      if (this.isUniqueConstraintViolation(err)) {
+        const duplicate = await this.prisma.webhookEvent.findUnique({
+          where: {
+            provider_eventId: {
+              eventId: args.eventId,
+              provider: args.provider,
+            },
+          },
+        });
+
+        return {
+          duplicate: true,
+          received: true,
+          status: (duplicate?.status ?? WEBHOOK_EVENT_STATUS.RECEIVED).toLowerCase(),
+        };
+      }
+
+      throw err;
+    }
+
+    try {
+      const result = await this.prisma.$transaction(async (tx) => {
+        const mutationResult = await args.processor(tx);
+
+        await tx.webhookEvent.update({
+          data: {
+            errorMessage: null,
+            paymentId: mutationResult.paymentId ?? args.paymentLookup.paymentId ?? null,
+            processedAt: new Date(),
+            status: mutationResult.status,
+          },
+          where: {
+            provider_eventId: {
+              eventId: args.eventId,
+              provider: args.provider,
+            },
+          },
+        });
+
+        return {
+          duplicate: false,
+          received: true,
+          status: mutationResult.status.toLowerCase(),
+        };
+      });
+
+      return result;
+    } catch (err: unknown) {
+      if (this.isUniqueConstraintViolation(err)) {
+        const existing = await this.prisma.webhookEvent.findUnique({
+          where: {
+            provider_eventId: {
+              eventId: args.eventId,
+              provider: args.provider,
+            },
+          },
+        });
+
+        if (existing) {
+          return {
+            duplicate: true,
+            received: true,
+            status: existing.status.toLowerCase(),
+          };
+        }
+      }
+
+      await this.prisma.webhookEvent
+        .update({
+          data: {
+            errorMessage: this.safeErrorMessage(err),
+            status: WEBHOOK_EVENT_STATUS.FAILED,
+          },
+          where: {
+            provider_eventId: {
+              eventId: args.eventId,
+              provider: args.provider,
+            },
+          },
+        })
+        .catch(() => undefined);
+
+      throw err;
+    }
   }
 }
 

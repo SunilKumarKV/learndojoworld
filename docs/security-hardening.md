@@ -52,6 +52,11 @@ Next.js responses include matching production-safe headers from `next.config.ts`
 - Stripe webhooks require `stripe-signature`.
 - Razorpay webhooks require `x-razorpay-signature`.
 - Signatures are verified using the raw request body before any payment, enrollment, subscription, or earning mutation.
+- Signed webhook events are recorded in the persistent `WebhookEvent` ledger with provider, event id, event type, status, optional payment link, and a SHA-256 hash of the raw body.
+- The ledger has a unique provider/event-id constraint. Replayed events already marked `PROCESSED` or `IGNORED` return safe success without duplicate payment, enrollment, subscription, or creator earning mutations.
+- Webhook processing updates payment status, paid enrollment, subscription activation, creator earning attribution, and the ledger status in one Prisma transaction.
+- Failed webhook processing marks the ledger event `FAILED` with a truncated safe error message so provider retries can be investigated and retried safely.
+- The ledger must not store webhook signatures, raw request bodies, card details, full payment objects, API keys, or other provider secrets.
 - Unsigned or invalid webhooks are rejected.
 - Frontend checkout success/cancel URLs never unlock courses or activate subscriptions.
 - Local development may fall back to `JWT_SECRET` for webhook smoke testing only when provider webhook secrets are not configured. Production requires provider webhook secrets.
