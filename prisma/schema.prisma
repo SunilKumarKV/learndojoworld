@@ -429,6 +429,7 @@ model Payment {
   status           PaymentStatus   @default(PENDING)
   metadata         Json?
   creatorEarning   CreatorEarning?
+  webhookEvents    WebhookEvent[]
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 
@@ -456,6 +457,26 @@ model CreatorEarning {
   @@index([creatorId, createdAt])
   @@index([courseId])
   @@index([currency])
+}
+
+model WebhookEvent {
+  id           String             @id @default(uuid()) @db.Uuid
+  provider     PaymentGateway
+  eventId      String
+  eventType    String
+  paymentId    String?            @db.Uuid
+  payment      Payment?           @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  status       WebhookEventStatus @default(RECEIVED)
+  rawHash      String?
+  errorMessage String?
+  processedAt  DateTime?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  @@unique([provider, eventId])
+  @@index([paymentId])
+  @@index([provider, status])
+  @@index([createdAt])
 }
 
 model PayoutProfile {
@@ -499,6 +520,13 @@ enum PaymentStatus {
   FAILED
   REFUNDED
   CANCELLED
+}
+
+enum WebhookEventStatus {
+  RECEIVED
+  PROCESSED
+  FAILED
+  IGNORED
 }
 
 enum PayoutMethod {
