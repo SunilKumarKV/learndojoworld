@@ -701,14 +701,17 @@ model ReferralReward {
   referralEventId String        @db.Uuid
   referralEvent   ReferralEvent @relation(fields: [referralEventId], references: [id], onDelete: Cascade)
 
-  rewardType  String
-  rewardValue String
-  status      RewardStatus @default(PENDING)
-  notes       String?
+  rewardType           String
+  rewardValue          String
+  status               RewardStatus @default(PENDING)
+  notes                String?
+  fulfilledAt          DateTime?
+  fulfillmentReference String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([userId, status])
   @@index([status])
+  @@index([fulfilledAt])
 }

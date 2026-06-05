@@ -114,10 +114,23 @@ export default function AdminReferralsPage() {
                       </span>
                       {reward.notes && (
                         <p
-                          className="text-xs text-red-600 mt-1 max-w-[150px] truncate"
+                          className="text-xs text-muted-foreground mt-1 max-w-[180px] truncate"
                           title={reward.notes}
                         >
                           Note: {reward.notes}
+                        </p>
+                      )}
+                      {reward.fulfilledAt && (
+                        <p className="text-xs text-green-700 mt-1">
+                          Fulfilled {new Date(reward.fulfilledAt).toLocaleDateString()}
+                        </p>
+                      )}
+                      {reward.fulfillmentReference && (
+                        <p
+                          className="text-xs text-muted-foreground mt-1 max-w-[180px] truncate"
+                          title={reward.fulfillmentReference}
+                        >
+                          Ref: {reward.fulfillmentReference}
                         </p>
                       )}
                     </td>
