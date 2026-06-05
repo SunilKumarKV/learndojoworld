@@ -55,3 +55,58 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+  e2e:
+    name: Critical E2E
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: learndojoworld
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d learndojoworld"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      AI_PRIMARY_PROVIDER: test
+      AI_PROVIDER: TEST
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/learndojoworld?schema=public
+      JWT_REFRESH_SECRET: ci_refresh_secret
+      JWT_SECRET: ci_jwt_secret
+      NEXT_PUBLIC_API_URL: http://localhost:4101/api/v1
+      REDIS_URL: redis://localhost:6379
+      STRIPE_WEBHOOK_SECRET: ci_stripe_webhook_secret
+      WEB_ORIGIN: http://localhost:3000
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.20.2
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: pnpm exec prisma generate
+
+      - name: Apply migrations
+        run: pnpm exec prisma migrate deploy
+
+      - name: Run critical E2E suite
+        run: pnpm e2e
