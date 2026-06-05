@@ -48,6 +48,8 @@ test provider only when `NODE_ENV=test`; production cannot use it.
   is reached, paid lesson context is blocked for non-enrolled users.
 - Referrals: referral apply works, self-referral is blocked, duplicate referral is blocked, reward
   records are created pending, admin grant fulfills temporary Pro access.
+- Beta operations: admin invite creation, invited user acceptance, feedback submission, support
+  submission, admin beta dashboard authorization, feedback review, and support status management.
 - Admin/RBAC: learners cannot access founder analytics, admins can, and role downgrade removes admin
   access for an old token.
 - Creator: creator draft creation, module/lesson creation, submit for review, admin approval, public

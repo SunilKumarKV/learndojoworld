@@ -13,6 +13,7 @@ import { AIChatRequestDto, AIInstruction } from "./dto/chat-request.dto";
 import { AIChatMessage } from "../../lib/ai/ai.provider";
 import { AIProviderRouter, ProviderResult } from "../../lib/ai/provider-router";
 import { BillingService, type AIUsageSummary } from "../billing/billing.service";
+import { AnalyticsService } from "../analytics/analytics.service";
 import type { AuthenticatedUser } from "../auth/types/authenticated-user.type";
 
 type AIChatServiceResult = {
@@ -37,6 +38,7 @@ export class AIService {
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
     private readonly billingService: BillingService,
+    private readonly analyticsService: AnalyticsService,
   ) {}
 
   async chat(user: AuthenticatedUser, body: AIChatRequestDto): Promise<AIChatServiceResult> {
@@ -119,6 +121,7 @@ export class AIService {
         tokensUsed: response.usage.totalTokens,
         userId,
       });
+      await this.trackFirstAIUsage(userId, response.provider, response.model);
 
       return {
         conversationId: conversation.id,
@@ -483,5 +486,18 @@ export class AIService {
     });
 
     return Boolean(enrollment);
+  }
+
+  private async trackFirstAIUsage(userId: string, provider: string, model: string) {
+    const existing = await this.prisma.userEvent.findFirst({
+      select: { id: true },
+      where: { event: "first_ai_usage", userId },
+    });
+
+    if (existing) {
+      return;
+    }
+
+    await this.analyticsService.trackEvent(userId, "first_ai_usage", { model, provider });
   }
 }

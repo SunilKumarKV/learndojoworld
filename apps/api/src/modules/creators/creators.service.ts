@@ -2,14 +2,18 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { UserRole } from "@prisma/client";
 
 import { PrismaService } from "../../lib/prisma/prisma.service";
+import { AnalyticsService } from "../analytics/analytics.service";
 import type { UpsertCreatorProfileDto } from "./dto/upsert-creator-profile.dto";
 
 @Injectable()
 export class CreatorsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly analyticsService: AnalyticsService,
+  ) {}
 
   async apply(userId: string, dto: UpsertCreatorProfileDto) {
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       const user = await tx.user.findUnique({
         select: {
           email: true,
@@ -58,6 +62,12 @@ export class CreatorsService {
         user: updatedUser,
       };
     });
+
+    await this.analyticsService.trackEvent(userId, "creator_application_submitted", {
+      creatorProfileId: result.profile.id,
+    });
+
+    return result;
   }
 
   async getMe(userId: string) {

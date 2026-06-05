@@ -59,6 +59,7 @@ async function main() {
     await runPaymentWebhookFlow();
     await runAIFlow();
     await runReferralFlow();
+    await runBetaOpsFlow();
     await runAdminAndCreatorFlow();
     console.log("critical e2e suite passed");
   } finally {
@@ -333,6 +334,72 @@ async function runReferralFlow() {
     method: "POST",
     token: adminToken,
   });
+}
+
+async function runBetaOpsFlow() {
+  const learner = await createUser("beta_learner");
+  const admin = await createUser("beta_admin", UserRole.ADMIN);
+  const learnerToken = signAccessToken(learner);
+  const adminToken = signAccessToken(admin);
+
+  const access = await api<{ email: string; id: string; status: string }>("/admin/beta/access", {
+    body: {
+      email: learner.email,
+      notes: "E2E beta invite",
+    },
+    method: "POST",
+    token: adminToken,
+  });
+  assert(access.status === "INVITED", "admin should create beta invites");
+
+  const accepted = await api<{ status: string }>("/beta/me", { token: learnerToken });
+  assert(accepted.status === "ACCEPTED", "invited user should accept beta access");
+
+  const feedback = await api<{ id: string; status: string }>("/beta/feedback", {
+    body: {
+      message: "E2E beta feedback message",
+      path: "/dashboard",
+      type: "GENERAL_FEEDBACK",
+    },
+    method: "POST",
+    token: learnerToken,
+  });
+  assert(feedback.status === "OPEN", "feedback should start open");
+
+  const support = await api<{ id: string; status: string }>("/beta/support", {
+    body: {
+      message: "E2E support issue details",
+      path: "/courses",
+      subject: "E2E support issue",
+    },
+    method: "POST",
+    token: learnerToken,
+  });
+  assert(support.status === "OPEN", "support requests should start open");
+
+  await expectStatus("/admin/beta/dashboard", 403, { token: learnerToken });
+  const dashboard = await api<{
+    beta: { totalBetaUsers: number };
+    feedback: { total: number };
+    support: { total: number };
+  }>("/admin/beta/dashboard", { token: adminToken });
+  assert(dashboard.beta.totalBetaUsers >= 1, "admin beta dashboard should count beta users");
+  assert(dashboard.feedback.total >= 1, "admin beta dashboard should count feedback");
+  assert(dashboard.support.total >= 1, "admin beta dashboard should count support tickets");
+
+  const reviewed = await api<{ status: string }>(`/admin/beta/feedback/${feedback.id}`, {
+    body: { status: "REVIEWED" },
+    method: "PATCH",
+    token: adminToken,
+  });
+  assert(reviewed.status === "REVIEWED", "admin should review beta feedback");
+
+  const inProgress = await api<{ status: string }>(`/admin/beta/support/${support.id}`, {
+    body: { status: "IN_PROGRESS" },
+    method: "PATCH",
+    token: adminToken,
+  });
+  assert(inProgress.status === "IN_PROGRESS", "admin should manage support tickets");
 }
 
 async function runAdminAndCreatorFlow() {
@@ -735,6 +802,7 @@ async function cleanup() {
   await prisma.webhookEvent.deleteMany({
     where: { eventId: { startsWith: `evt_${runId}` } },
   });
+  await prisma.betaAccess.deleteMany({ where: { email: { endsWith: `@${emailDomain}` } } });
   if (cleanupCourseIds.size > 0) {
     await prisma.course.deleteMany({ where: { id: { in: [...cleanupCourseIds] } } });
   }

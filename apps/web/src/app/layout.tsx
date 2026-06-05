@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import { AppProviders } from "@/app/providers";
 import { SITE_CONFIG } from "@/constants/site";
+import { BetaBanner } from "@/features/beta/beta-banner";
 import { absoluteUrl } from "@/lib/seo/metadata";
 import "./globals.css";
 
@@ -49,7 +50,10 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
   return (
     <html lang="en">
       <body className="font-sans antialiased">
-        <AppProviders>{children}</AppProviders>
+        <AppProviders>
+          <BetaBanner />
+          {children}
+        </AppProviders>
       </body>
     </html>
   );
