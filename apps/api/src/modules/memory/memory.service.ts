@@ -1,8 +1,9 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
-import { FlashcardDifficulty, Prisma } from "@prisma/client";
+import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import { FlashcardDifficulty, Prisma, UserRole } from "@prisma/client";
 
 import { PrismaService } from "../../lib/prisma/prisma.service";
 import { AnalyticsService } from "../analytics/analytics.service";
+import type { AuthenticatedUser } from "../auth/types/authenticated-user.type";
 
 const SPACED_REPETITION_DAYS: Record<FlashcardDifficulty, number> = {
   FORGOT: 1,
@@ -18,14 +19,23 @@ export class MemoryService {
     private readonly analyticsService: AnalyticsService,
   ) {}
 
-  async getQuizzes() {
-    return this.prisma.quiz.findMany({
+  async getQuizzes(user: AuthenticatedUser) {
+    const quizzes = await this.prisma.quiz.findMany({
       orderBy: { createdAt: "desc" },
       take: 10,
     });
+
+    const accessibleQuizzes = [];
+    for (const quiz of quizzes) {
+      if (await this.canAccessQuiz(user, quiz)) {
+        accessibleQuizzes.push(quiz);
+      }
+    }
+
+    return accessibleQuizzes;
   }
 
-  async getQuiz(id: string) {
+  async getQuiz(user: AuthenticatedUser, id: string) {
     const quiz = await this.prisma.quiz.findUnique({
       include: { questions: true },
       where: { id },
@@ -35,10 +45,12 @@ export class MemoryService {
       throw new NotFoundException("Quiz not found");
     }
 
+    await this.assertQuizAccess(user, quiz);
+
     return quiz;
   }
 
-  async submitAttempt(userId: string, quizId: string, answers: Record<string, unknown>) {
+  async submitAttempt(user: AuthenticatedUser, quizId: string, answers: Record<string, unknown>) {
     const quiz = await this.prisma.quiz.findUnique({
       include: { questions: true },
       where: { id: quizId },
@@ -47,6 +59,8 @@ export class MemoryService {
     if (!quiz) {
       throw new NotFoundException("Quiz not found");
     }
+
+    await this.assertQuizAccess(user, quiz);
 
     let score = 0;
     const explanations: string[] = [];
@@ -75,11 +89,11 @@ export class MemoryService {
         passed,
         quizId,
         score: percentage,
-        userId,
+        userId: user.id,
       },
     });
 
-    await this.analyticsService.trackEvent(userId, "quiz_completed", {
+    await this.analyticsService.trackEvent(user.id, "quiz_completed", {
       quizId,
       passed,
       score: percentage,
@@ -92,7 +106,7 @@ export class MemoryService {
         lessonId: quiz.lessonId ?? null,
         metadata: { passed, score: percentage },
         type: "QUIZ_COMPLETED",
-        userId,
+        userId: user.id,
         xpEarned: passed ? 25 : 0,
       },
     });
@@ -106,10 +120,10 @@ export class MemoryService {
     };
   }
 
-  async getResults(userId: string, quizId: string) {
+  async getResults(user: AuthenticatedUser, quizId: string) {
     const attempt = await this.prisma.quizAttempt.findFirst({
       orderBy: { createdAt: "desc" },
-      where: { quizId, userId },
+      where: { quizId, userId: user.id },
     });
 
     if (!attempt) {
@@ -124,6 +138,8 @@ export class MemoryService {
     if (!quiz) {
       throw new NotFoundException("Quiz not found");
     }
+
+    await this.assertQuizAccess(user, quiz);
 
     return {
       attempt,
@@ -324,5 +340,78 @@ export class MemoryService {
     return (
       normalizedUser.length > 0 && normalizedUser.every((item) => normalizedExpected.includes(item))
     );
+  }
+
+  private async assertQuizAccess(
+    user: AuthenticatedUser,
+    quiz: { courseId: string | null; lessonId: string | null },
+  ) {
+    if (!(await this.canAccessQuiz(user, quiz))) {
+      throw new ForbiddenException("You must enroll in this course before accessing this quiz.");
+    }
+  }
+
+  private async canAccessQuiz(
+    user: AuthenticatedUser,
+    quiz: { courseId: string | null; lessonId: string | null },
+  ) {
+    if (!quiz.courseId && !quiz.lessonId) {
+      return true;
+    }
+
+    const course = quiz.courseId
+      ? await this.prisma.course.findUnique({
+          select: { creatorId: true, id: true },
+          where: { id: quiz.courseId },
+        })
+      : await this.findCourseByLessonId(quiz.lessonId);
+
+    if (!course) {
+      return false;
+    }
+
+    return this.canAccessCourseContent(user, course.id, course.creatorId);
+  }
+
+  private async findCourseByLessonId(lessonId: string | null) {
+    if (!lessonId) {
+      return null;
+    }
+
+    const lesson = await this.prisma.lesson.findUnique({
+      select: {
+        module: {
+          select: {
+            course: {
+              select: { creatorId: true, id: true },
+            },
+          },
+        },
+      },
+      where: { id: lessonId },
+    });
+
+    return lesson?.module.course ?? null;
+  }
+
+  private async canAccessCourseContent(
+    user: AuthenticatedUser,
+    courseId: string,
+    creatorId: string | null,
+  ) {
+    if (user.role === UserRole.ADMIN || user.role === UserRole.SUPER_ADMIN) {
+      return true;
+    }
+
+    if (user.role === UserRole.CREATOR && creatorId === user.id) {
+      return true;
+    }
+
+    const enrollment = await this.prisma.enrollment.findUnique({
+      select: { id: true },
+      where: { userId_courseId: { courseId, userId: user.id } },
+    });
+
+    return Boolean(enrollment);
   }
 }

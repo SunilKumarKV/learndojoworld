@@ -63,8 +63,6 @@ export type CourseDetail = {
       slug: string;
       type: "TEXT" | "VIDEO" | "ARTICLE" | "EXERCISE";
       order: number;
-      content: string;
-      videoUrl: string | null;
       durationSec: number | null;
       isPreview: boolean;
     }>;

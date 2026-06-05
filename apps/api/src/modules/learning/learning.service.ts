@@ -1,8 +1,9 @@
 import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
-import { Prisma } from "@prisma/client";
+import { Prisma, UserRole } from "@prisma/client";
 
 import { PrismaService } from "../../lib/prisma/prisma.service";
 import { AnalyticsService } from "../analytics/analytics.service";
+import type { AuthenticatedUser } from "../auth/types/authenticated-user.type";
 
 @Injectable()
 export class LearningService {
@@ -11,7 +12,7 @@ export class LearningService {
     private readonly analyticsService: AnalyticsService,
   ) {}
 
-  async getLessonById(userId: string, lessonId: string) {
+  async getLessonById(user: AuthenticatedUser, lessonId: string) {
     const lesson = await this.prisma.lesson.findUnique({
       include: {
         module: {
@@ -27,8 +28,12 @@ export class LearningService {
       throw new NotFoundException("Lesson not found");
     }
 
-    const isEnrolled = await this.hasEnrollment(userId, lesson.module.courseId);
-    if (!lesson.isPreview && !isEnrolled) {
+    const hasAccess = await this.canAccessCourseContent(
+      user,
+      lesson.module.courseId,
+      lesson.module.course.creatorId,
+    );
+    if (!hasAccess) {
       throw new ForbiddenException("You must enroll in this course before accessing the lesson.");
     }
 
@@ -286,6 +291,22 @@ export class LearningService {
     });
 
     return Boolean(enrollment);
+  }
+
+  private async canAccessCourseContent(
+    user: AuthenticatedUser,
+    courseId: string,
+    creatorId: string | null,
+  ) {
+    if (user.role === UserRole.ADMIN || user.role === UserRole.SUPER_ADMIN) {
+      return true;
+    }
+
+    if (user.role === UserRole.CREATOR && creatorId === user.id) {
+      return true;
+    }
+
+    return this.hasEnrollment(user.id, courseId);
   }
 
   private async syncEnrollmentProgress(userId: string, courseId: string) {

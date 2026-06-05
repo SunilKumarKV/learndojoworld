@@ -11,14 +11,14 @@ export class MemoryController {
 
   @UseGuards(JwtAuthGuard)
   @Get("quizzes")
-  getQuizzes() {
-    return this.memoryService.getQuizzes();
+  getQuizzes(@CurrentUser() user: AuthenticatedUser) {
+    return this.memoryService.getQuizzes(user);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get("quizzes/:id")
-  getQuiz(@Param("id") id: string) {
-    return this.memoryService.getQuiz(id);
+  getQuiz(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string) {
+    return this.memoryService.getQuiz(user, id);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -28,13 +28,13 @@ export class MemoryController {
     @Param("id") id: string,
     @Body("answers") answers: Record<string, unknown>,
   ) {
-    return this.memoryService.submitAttempt(user.id, id, answers ?? {});
+    return this.memoryService.submitAttempt(user, id, answers ?? {});
   }
 
   @UseGuards(JwtAuthGuard)
   @Get("quizzes/:id/results")
   getResults(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string) {
-    return this.memoryService.getResults(user.id, id);
+    return this.memoryService.getResults(user, id);
   }
 
   @UseGuards(JwtAuthGuard)

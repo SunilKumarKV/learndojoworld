@@ -26,7 +26,7 @@ export class AIController {
   @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @HttpCode(200)
   async chat(@CurrentUser() user: AuthenticatedUser, @Body() body: AIChatRequestDto) {
-    const result = await this.aiService.chat(user.id, body);
+    const result = await this.aiService.chat(user, body);
 
     return {
       conversationId: result.conversationId,
@@ -53,7 +53,7 @@ export class AIController {
   @UseGuards(JwtAuthGuard)
   @Get("conversations")
   getConversations(@CurrentUser() user: AuthenticatedUser) {
-    return this.aiService.getConversations(user.id);
+    return this.aiService.getConversations(user);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -63,7 +63,7 @@ export class AIController {
       throw new BadRequestException("Conversation id is required.");
     }
 
-    return this.aiService.getConversation(user.id, conversationId);
+    return this.aiService.getConversation(user, conversationId);
   }
 
   @UseGuards(JwtAuthGuard)

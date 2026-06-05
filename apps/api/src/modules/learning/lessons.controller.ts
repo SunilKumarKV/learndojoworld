@@ -12,6 +12,6 @@ export class LessonsController {
   @UseGuards(JwtAuthGuard)
   @Get(":lessonId")
   getLesson(@CurrentUser() user: AuthenticatedUser, @Param("lessonId") lessonId: string) {
-    return this.learningService.getLessonById(user.id, lessonId);
+    return this.learningService.getLessonById(user, lessonId);
   }
 }
