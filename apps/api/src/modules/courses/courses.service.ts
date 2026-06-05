@@ -80,6 +80,15 @@ export class CoursesService {
           include: {
             lessons: {
               orderBy: [{ order: "asc" }],
+              select: {
+                durationSec: true,
+                id: true,
+                isPreview: true,
+                order: true,
+                slug: true,
+                title: true,
+                type: true,
+              },
             },
           },
           orderBy: [{ order: "asc" }],

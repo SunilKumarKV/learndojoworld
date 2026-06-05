@@ -1,16 +1,19 @@
 import {
+  BadRequestException,
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
   ServiceUnavailableException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { Prisma } from "@prisma/client";
+import { Prisma, UserRole } from "@prisma/client";
 import { PrismaService } from "../../lib/prisma/prisma.service";
 import { AIChatRequestDto, AIInstruction } from "./dto/chat-request.dto";
 import { AIChatMessage } from "../../lib/ai/ai.provider";
 import { AIProviderRouter, ProviderResult } from "../../lib/ai/provider-router";
 import { BillingService, type AIUsageSummary } from "../billing/billing.service";
+import type { AuthenticatedUser } from "../auth/types/authenticated-user.type";
 
 type AIChatServiceResult = {
   conversationId: string;
@@ -36,7 +39,9 @@ export class AIService {
     private readonly billingService: BillingService,
   ) {}
 
-  async chat(userId: string, body: AIChatRequestDto): Promise<AIChatServiceResult> {
+  async chat(user: AuthenticatedUser, body: AIChatRequestDto): Promise<AIChatServiceResult> {
+    const userId = user.id;
+
     // Initialize provider router on first use (avoids throwing on bootstrap)
     if (!this.providerRouter) {
       this.providerRouter = new AIProviderRouter({
@@ -55,7 +60,7 @@ export class AIService {
     await this.billingService.assertAIUsageAvailable(userId);
 
     const contextMessages = await this.buildContextMessages(
-      userId,
+      user,
       body.courseId,
       body.lessonId,
       conversation,
@@ -146,9 +151,9 @@ export class AIService {
     }
   }
 
-  async getConversations(userId: string) {
+  async getConversations(user: AuthenticatedUser) {
     const conversations = await this.prisma.aIConversation.findMany({
-      where: { userId },
+      where: { userId: user.id },
       include: {
         messages: {
           take: 1,
@@ -159,7 +164,14 @@ export class AIService {
       orderBy: { updatedAt: "desc" },
     });
 
-    return conversations.map((conversation) => ({
+    const accessibleConversations = [];
+    for (const conversation of conversations) {
+      if (await this.canAccessConversationContext(user, conversation)) {
+        accessibleConversations.push(conversation);
+      }
+    }
+
+    return accessibleConversations.map((conversation) => ({
       id: conversation.id,
       title: conversation.title ?? conversation.id,
       courseId: conversation.courseId,
@@ -173,7 +185,7 @@ export class AIService {
     }));
   }
 
-  async getConversation(userId: string, conversationId: string) {
+  async getConversation(user: AuthenticatedUser, conversationId: string) {
     const conversation = await this.prisma.aIConversation.findUnique({
       where: { id: conversationId },
       include: {
@@ -183,9 +195,11 @@ export class AIService {
       },
     });
 
-    if (!conversation || conversation.userId !== userId) {
+    if (!conversation || conversation.userId !== user.id) {
       throw new NotFoundException("Conversation not found.");
     }
+
+    await this.assertConversationContextAccess(user, conversation);
 
     return {
       id: conversation.id,
@@ -249,36 +263,17 @@ export class AIService {
   }
 
   private async buildContextMessages(
-    userId: string,
+    user: AuthenticatedUser,
     courseId?: string,
     lessonId?: string,
     conversation?: { courseId?: string | null; lessonId?: string | null },
   ) {
-    const effectiveCourseId = courseId ?? conversation?.courseId;
-    const effectiveLessonId = lessonId ?? conversation?.lessonId;
-
     const profilePromise = this.prisma.profile.findUnique({
-      where: { userId },
+      where: { userId: user.id },
     });
-
-    const lessonPromise = effectiveLessonId
-      ? this.prisma.lesson.findUnique({
-          where: { id: effectiveLessonId },
-          include: {
-            module: { include: { course: true } },
-          },
-        })
-      : Promise.resolve(null);
-
-    const coursePromise = effectiveCourseId
-      ? this.prisma.course.findUnique({ where: { id: effectiveCourseId } })
-      : Promise.resolve(null);
-
-    const [profile, lesson, course] = await Promise.all([
-      profilePromise,
-      lessonPromise,
-      coursePromise,
-    ]);
+    const contextPromise = this.loadAuthorizedContext(user, courseId, lessonId, conversation);
+    const [profile, context] = await Promise.all([profilePromise, contextPromise]);
+    const { course, lesson } = context;
 
     const contextMessages: AIChatMessage[] = [
       {
@@ -347,5 +342,146 @@ export class AIService {
       default:
         return trimmed;
     }
+  }
+
+  private async canAccessConversationContext(
+    user: AuthenticatedUser,
+    conversation: { courseId?: string | null; lessonId?: string | null },
+  ) {
+    try {
+      await this.assertConversationContextAccess(user, conversation);
+      return true;
+    } catch (err: unknown) {
+      if (
+        err instanceof BadRequestException ||
+        err instanceof ForbiddenException ||
+        err instanceof NotFoundException
+      ) {
+        return false;
+      }
+
+      throw err;
+    }
+  }
+
+  private async assertConversationContextAccess(
+    user: AuthenticatedUser,
+    conversation: { courseId?: string | null; lessonId?: string | null },
+  ) {
+    await this.loadAuthorizedContext(
+      user,
+      conversation.courseId ?? undefined,
+      conversation.lessonId ?? undefined,
+    );
+  }
+
+  private async loadAuthorizedContext(
+    user: AuthenticatedUser,
+    courseId?: string,
+    lessonId?: string,
+    conversation?: { courseId?: string | null; lessonId?: string | null },
+  ) {
+    const effectiveCourseId = courseId ?? conversation?.courseId ?? undefined;
+    const effectiveLessonId = lessonId ?? conversation?.lessonId ?? undefined;
+
+    if (!effectiveCourseId && !effectiveLessonId) {
+      return { course: null, lesson: null };
+    }
+
+    let lesson: {
+      id: string;
+      title: string;
+      content: string;
+      module: {
+        courseId: string;
+        course: {
+          id: string;
+          title: string;
+          description: string;
+          creatorId: string | null;
+        };
+      };
+    } | null = null;
+    let course: {
+      id: string;
+      title: string;
+      description: string;
+      creatorId: string | null;
+    } | null = null;
+
+    if (effectiveLessonId) {
+      lesson = await this.prisma.lesson.findUnique({
+        select: {
+          content: true,
+          id: true,
+          module: {
+            select: {
+              course: {
+                select: {
+                  creatorId: true,
+                  description: true,
+                  id: true,
+                  title: true,
+                },
+              },
+              courseId: true,
+            },
+          },
+          title: true,
+        },
+        where: { id: effectiveLessonId },
+      });
+
+      if (!lesson) {
+        throw new NotFoundException("Lesson not found.");
+      }
+
+      course = lesson.module.course;
+
+      if (effectiveCourseId && effectiveCourseId !== lesson.module.courseId) {
+        throw new BadRequestException("Lesson does not belong to the requested course.");
+      }
+    } else if (effectiveCourseId) {
+      course = await this.prisma.course.findUnique({
+        select: {
+          creatorId: true,
+          description: true,
+          id: true,
+          title: true,
+        },
+        where: { id: effectiveCourseId },
+      });
+
+      if (!course) {
+        throw new NotFoundException("Course not found.");
+      }
+    }
+
+    if (course && !(await this.canAccessCourseContent(user, course.id, course.creatorId))) {
+      throw new ForbiddenException("You must enroll in this course before using its AI context.");
+    }
+
+    return { course, lesson };
+  }
+
+  private async canAccessCourseContent(
+    user: AuthenticatedUser,
+    courseId: string,
+    creatorId: string | null,
+  ) {
+    if (user.role === UserRole.ADMIN || user.role === UserRole.SUPER_ADMIN) {
+      return true;
+    }
+
+    if (user.role === UserRole.CREATOR && creatorId === user.id) {
+      return true;
+    }
+
+    const enrollment = await this.prisma.enrollment.findUnique({
+      select: { id: true },
+      where: { userId_courseId: { courseId, userId: user.id } },
+    });
+
+    return Boolean(enrollment);
   }
 }
