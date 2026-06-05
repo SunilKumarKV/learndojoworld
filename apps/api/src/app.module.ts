@@ -10,6 +10,7 @@ import { AIModule } from "./modules/ai/ai.module";
 import { AnalyticsModule } from "./modules/analytics/analytics.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { AdminModule } from "./modules/admin/admin.module";
+import { BetaModule } from "./modules/beta/beta.module";
 import { BillingModule } from "./modules/billing/billing.module";
 import { CoursesModule } from "./modules/courses/courses.module";
 import { CreatorsModule } from "./modules/creators/creators.module";
@@ -42,6 +43,7 @@ import { ReferralsModule } from "./modules/referrals/referrals.module";
     PrismaModule,
     AuthModule,
     AdminModule,
+    BetaModule,
     BillingModule,
     CoursesModule,
     CreatorsModule,
