@@ -6,9 +6,10 @@ import {
 import type { AIChatMessage, AIChatResponse, AIProvider } from "./ai.provider";
 import { OpenAIProvider } from "./openai.provider";
 import { GeminiProvider } from "./gemini.provider";
+import { TestAIProvider } from "./test.provider";
 
-type ProviderName = "OPENAI" | "GEMINI";
-type ProviderSlug = "openai" | "gemini";
+type ProviderName = "OPENAI" | "GEMINI" | "TEST";
+type ProviderSlug = "openai" | "gemini" | "test";
 
 export type ProviderResult = AIChatResponse & {
   provider: ProviderSlug;
@@ -28,7 +29,12 @@ export class AIProviderRouter {
       "OPENAI"
     ).toString();
     const primaryUpper = primaryRaw.toUpperCase();
-    this.primaryName = primaryUpper === "GEMINI" ? "GEMINI" : "OPENAI";
+    this.primaryName =
+      primaryUpper === "TEST" && this.env.NODE_ENV === "test"
+        ? "TEST"
+        : primaryUpper === "GEMINI"
+          ? "GEMINI"
+          : "OPENAI";
 
     const fb = this.env.AI_FALLBACK_PROVIDER;
     if (fb) {
@@ -37,6 +43,8 @@ export class AIProviderRouter {
         this.fallbackName = "GEMINI";
       } else if (fbUpper === "OPENAI") {
         this.fallbackName = "OPENAI";
+      } else if (fbUpper === "TEST" && this.env.NODE_ENV === "test") {
+        this.fallbackName = "TEST";
       }
     }
   }
@@ -47,6 +55,12 @@ export class AIProviderRouter {
         return new OpenAIProvider(this.env.OPENAI_API_KEY || undefined, this.env.OPENAI_MODEL);
       case "GEMINI":
         return new GeminiProvider(this.env.GEMINI_API_KEY || undefined, this.env.GEMINI_MODEL);
+      case "TEST":
+        if (this.env.NODE_ENV !== "test") {
+          throw new InternalServerErrorException("Unknown provider");
+        }
+
+        return new TestAIProvider();
       default:
         throw new InternalServerErrorException("Unknown provider");
     }
@@ -59,8 +73,10 @@ export class AIProviderRouter {
       try {
         const provider = this.createProvider(name);
         const res = await provider.chat(messages);
-        const modelKey = name === "OPENAI" ? "OPENAI_MODEL" : "GEMINI_MODEL";
-        const providerSlug: ProviderSlug = name === "GEMINI" ? "gemini" : "openai";
+        const modelKey =
+          name === "OPENAI" ? "OPENAI_MODEL" : name === "GEMINI" ? "GEMINI_MODEL" : "TEST_AI_MODEL";
+        const providerSlug: ProviderSlug =
+          name === "GEMINI" ? "gemini" : name === "TEST" ? "test" : "openai";
         return {
           ...res,
           provider: providerSlug,

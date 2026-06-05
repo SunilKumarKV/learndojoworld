@@ -12,6 +12,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "husky",
+    "e2e": "tsx tests/e2e/critical-flows.e2e.ts",
     "db:generate": "pnpm exec prisma generate",
     "db:migrate": "pnpm exec prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts"

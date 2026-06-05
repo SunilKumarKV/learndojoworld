@@ -24,7 +24,12 @@ export default tseslint.config(
     languageOptions: {
       parserOptions: {
         projectService: {
-          allowDefaultProject: ["*.config.ts", "apps/web/*.config.ts", "prisma/*.ts"],
+          allowDefaultProject: [
+            "*.config.ts",
+            "apps/web/*.config.ts",
+            "prisma/*.ts",
+            "tests/e2e/*.ts",
+          ],
         },
         tsconfigRootDir: import.meta.dirname,
       },
