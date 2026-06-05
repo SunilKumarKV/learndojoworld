@@ -168,6 +168,12 @@ export default function ReferralsPage() {
             once approved.
           </p>
         </div>
+        {me.activeBenefit && (
+          <div className="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800 dark:border-green-900/40 dark:bg-green-950/20 dark:text-green-300">
+            Active benefit: {me.activeBenefit.planCode} until{" "}
+            {new Date(me.activeBenefit.currentPeriodEnd).toLocaleDateString()}
+          </div>
+        )}
         {!stats?.myRewards || stats.myRewards.length === 0 ? (
           <p className="text-muted-foreground text-sm py-8 text-center bg-muted/20 rounded-lg">
             No rewards yet. Share your link to start earning!
@@ -184,6 +190,14 @@ export default function ReferralsPage() {
                     via {reward.relatedUser} ({reward.role}) •{" "}
                     {new Date(reward.createdAt).toLocaleDateString()}
                   </p>
+                  {reward.fulfilledAt && (
+                    <p className="text-xs text-green-700 dark:text-green-400">
+                      Fulfilled {new Date(reward.fulfilledAt).toLocaleDateString()}
+                    </p>
+                  )}
+                  {reward.notes && (
+                    <p className="text-xs text-muted-foreground max-w-md">{reward.notes}</p>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <span

@@ -8,6 +8,11 @@ export interface ReferralMeResponse {
   pendingReferrals: number;
   pendingRewards: number;
   grantedRewards: number;
+  activeBenefit: {
+    planCode: "PRO" | "PREMIUM";
+    currentPeriodEnd: string;
+    source: "REFERRAL_OR_PAID_PRO" | "PREMIUM";
+  } | null;
 }
 
 export interface ReferralEvent {
@@ -23,6 +28,9 @@ export interface ReferralRewardItem {
   rewardValue: string;
   status: "PENDING" | "APPROVED" | "GRANTED" | "REJECTED";
   createdAt: string;
+  fulfilledAt: string | null;
+  fulfillmentReference: string | null;
+  notes: string | null;
   relatedUser: string;
   role: "Inviter" | "Invitee";
 }

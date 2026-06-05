@@ -4,7 +4,13 @@ import {
   NotFoundException,
   ConflictException,
 } from "@nestjs/common";
-import { RewardStatus, PayoutRequestStatus, type Prisma } from "@prisma/client";
+import {
+  PlanCode,
+  RewardStatus,
+  PayoutRequestStatus,
+  SubscriptionStatus,
+  type Prisma,
+} from "@prisma/client";
 
 import { PrismaService } from "../../lib/prisma/prisma.service";
 
@@ -326,19 +332,54 @@ export class AdminService {
 
   async grantReward(id: string, adminId: string) {
     return this.prisma.$transaction(async (tx) => {
-      const reward = await tx.referralReward.findUnique({ where: { id } });
+      const reward = await tx.referralReward.findUnique({
+        include: {
+          user: { select: { id: true, email: true } },
+        },
+        where: { id },
+      });
       if (!reward) throw new NotFoundException("Reward not found.");
+
+      if (reward.status === RewardStatus.GRANTED || reward.fulfilledAt) {
+        throw new BadRequestException("Reward has already been granted.");
+      }
 
       if (reward.status !== RewardStatus.APPROVED) {
         throw new BadRequestException("Only APPROVED rewards can be granted.");
       }
 
-      const updated = await tx.referralReward.update({
-        where: { id },
-        data: { status: RewardStatus.GRANTED },
+      const claimed = await tx.referralReward.updateMany({
+        data: {
+          notes: "Reward fulfillment in progress.",
+        },
+        where: {
+          fulfilledAt: null,
+          id,
+          status: RewardStatus.APPROVED,
+        },
       });
 
-      // DO NOT activate the subscription yet (per instructions)
+      if (claimed.count !== 1) {
+        throw new BadRequestException("Reward has already been granted.");
+      }
+
+      const days = this.resolveReferralRewardDays(reward.rewardType, reward.rewardValue);
+      const fulfillment = await this.fulfillProReferralReward(tx, reward.userId, days, id);
+
+      const updated = await tx.referralReward.update({
+        where: { id },
+        data: {
+          fulfilledAt: fulfillment.fulfilledAt,
+          fulfillmentReference: fulfillment.reference,
+          notes: fulfillment.notes,
+          status: RewardStatus.GRANTED,
+        },
+      });
+
+      await tx.referralEvent.update({
+        data: { status: "COMPLETED" },
+        where: { id: reward.referralEventId },
+      });
 
       await tx.auditLog.create({
         data: {
@@ -349,13 +390,122 @@ export class AdminService {
           metadata: {
             previousStatus: reward.status,
             newStatus: RewardStatus.GRANTED,
-            note: "Subscription activation pending future implementation",
+            rewardType: reward.rewardType,
+            rewardValue: reward.rewardValue,
+            userId: reward.userId,
+            fulfillmentReference: fulfillment.reference,
+            fulfillmentAction: fulfillment.action,
+            previousPlanCode: fulfillment.previousPlanCode,
+            resultingPlanCode: fulfillment.resultingPlanCode,
+            currentPeriodEnd: fulfillment.currentPeriodEnd?.toISOString() ?? null,
           },
         },
       });
 
       return updated;
     });
+  }
+
+  private resolveReferralRewardDays(rewardType: string, rewardValue: string) {
+    const days = Number(rewardValue);
+
+    if (rewardType !== "PRO_7_DAYS" || !Number.isInteger(days) || days !== 7) {
+      throw new BadRequestException("Unsupported referral reward type.");
+    }
+
+    return days;
+  }
+
+  private async fulfillProReferralReward(
+    tx: Prisma.TransactionClient,
+    userId: string,
+    days: number,
+    rewardId: string,
+  ) {
+    const now = new Date();
+    const fulfilledAt = now;
+    const proPlan = await tx.plan.findUnique({ where: { code: PlanCode.PRO } });
+    const premiumPlan = await tx.plan.findUnique({ where: { code: PlanCode.PREMIUM } });
+
+    if (!proPlan || !premiumPlan) {
+      throw new NotFoundException("Referral reward plans are not configured.");
+    }
+
+    const activePaidSubscription = await tx.subscription.findFirst({
+      include: { plan: true },
+      orderBy: { currentPeriodEnd: "desc" },
+      where: {
+        currentPeriodEnd: { gt: now },
+        plan: { code: { in: [PlanCode.PRO, PlanCode.PREMIUM] } },
+        status: SubscriptionStatus.ACTIVE,
+        userId,
+      },
+    });
+
+    if (activePaidSubscription?.plan.code === PlanCode.PREMIUM) {
+      return {
+        action: "PREMIUM_PRESERVED",
+        currentPeriodEnd: activePaidSubscription.currentPeriodEnd,
+        fulfilledAt,
+        notes: "Reward fulfilled; existing Premium access preserved.",
+        previousPlanCode: PlanCode.PREMIUM,
+        reference: `referral:${rewardId}:premium-preserved:${activePaidSubscription.id}`,
+        resultingPlanCode: PlanCode.PREMIUM,
+      };
+    }
+
+    const extensionBase =
+      activePaidSubscription?.plan.code === PlanCode.PRO &&
+      activePaidSubscription.currentPeriodEnd > now
+        ? activePaidSubscription.currentPeriodEnd
+        : now;
+    const currentPeriodEnd = this.addDays(extensionBase, days);
+
+    if (activePaidSubscription?.plan.code === PlanCode.PRO) {
+      const updatedSubscription = await tx.subscription.update({
+        data: {
+          currentPeriodEnd,
+        },
+        where: { id: activePaidSubscription.id },
+      });
+
+      return {
+        action: "PRO_EXTENDED",
+        currentPeriodEnd: updatedSubscription.currentPeriodEnd,
+        fulfilledAt,
+        notes: `Reward fulfilled; Pro access extended by ${days} days.`,
+        previousPlanCode: PlanCode.PRO,
+        reference: `referral:${rewardId}:pro-extended:${updatedSubscription.id}`,
+        resultingPlanCode: PlanCode.PRO,
+      };
+    }
+
+    const createdSubscription = await tx.subscription.create({
+      data: {
+        currentPeriodEnd,
+        currentPeriodStart: now,
+        planId: proPlan.id,
+        status: SubscriptionStatus.ACTIVE,
+        userId,
+      },
+    });
+
+    return {
+      action: "PRO_ACTIVATED",
+      currentPeriodEnd: createdSubscription.currentPeriodEnd,
+      fulfilledAt,
+      notes: `Reward fulfilled; Pro access activated for ${days} days.`,
+      previousPlanCode: PlanCode.FREE,
+      reference: `referral:${rewardId}:pro-activated:${createdSubscription.id}`,
+      resultingPlanCode: PlanCode.PRO,
+    };
+  }
+
+  private addDays(date: Date, days: number) {
+    const next = new Date(date);
+    next.setDate(next.getDate() + days);
+
+    return next;
   }
 
   private async createAuditLog(

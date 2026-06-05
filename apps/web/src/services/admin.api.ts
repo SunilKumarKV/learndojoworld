@@ -15,6 +15,8 @@ export interface AdminReferralData {
     rewardValue: string;
     status: "PENDING" | "APPROVED" | "GRANTED" | "REJECTED";
     notes: string | null;
+    fulfilledAt: string | null;
+    fulfillmentReference: string | null;
     createdAt: string;
     user: { name: string; email: string };
     referralEvent: {

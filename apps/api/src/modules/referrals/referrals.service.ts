@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, ConflictException } from "@nestjs/common";
 import { PrismaService } from "../../lib/prisma/prisma.service";
-import { ReferralStatus, RewardStatus } from "@prisma/client";
+import { PlanCode, ReferralStatus, RewardStatus, SubscriptionStatus } from "@prisma/client";
 import { randomBytes } from "crypto";
 
 @Injectable()
@@ -28,7 +28,7 @@ export class ReferralsService {
       }
     }
 
-    const [eventCounts, rewardCounts] = await Promise.all([
+    const [eventCounts, rewardCounts, activeBenefit] = await Promise.all([
       this.prisma.referralEvent.groupBy({
         by: ["status"],
         where: { inviterUserId: userId },
@@ -39,6 +39,7 @@ export class ReferralsService {
         where: { userId },
         _count: { id: true },
       }),
+      this.getActiveBenefit(userId),
     ]);
 
     let pendingReferrals = 0;
@@ -63,6 +64,7 @@ export class ReferralsService {
       pendingReferrals,
       pendingRewards,
       grantedRewards,
+      activeBenefit,
     };
   }
 
@@ -111,6 +113,9 @@ export class ReferralsService {
           rewardValue: r.rewardValue,
           status: r.status,
           createdAt: r.createdAt,
+          fulfilledAt: r.fulfilledAt,
+          fulfillmentReference: r.fulfillmentReference,
+          notes: r.notes,
           relatedUser: relatedUser || "Unknown User",
           role: isInviter ? "Inviter" : "Invitee",
         };
@@ -176,5 +181,28 @@ export class ReferralsService {
         status: newEvent.status,
       };
     });
+  }
+
+  private async getActiveBenefit(userId: string) {
+    const subscription = await this.prisma.subscription.findFirst({
+      include: { plan: true },
+      orderBy: { currentPeriodEnd: "desc" },
+      where: {
+        currentPeriodEnd: { gt: new Date() },
+        plan: { code: { in: [PlanCode.PRO, PlanCode.PREMIUM] } },
+        status: SubscriptionStatus.ACTIVE,
+        userId,
+      },
+    });
+
+    if (!subscription) {
+      return null;
+    }
+
+    return {
+      planCode: subscription.plan.code,
+      currentPeriodEnd: subscription.currentPeriodEnd,
+      source: subscription.plan.code === PlanCode.PRO ? "REFERRAL_OR_PAID_PRO" : "PREMIUM",
+    };
   }
 }
