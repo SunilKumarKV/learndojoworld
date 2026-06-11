@@ -242,9 +242,11 @@ chore/repo-cleanup
 Before opening a PR:
 
 ```bash
+pnpm format:check
 pnpm lint
 pnpm typecheck
 pnpm build
+pnpm e2e
 ```
 
 All CI checks must pass before merge.
@@ -253,20 +255,36 @@ All CI checks must pass before merge.
 
 # Deployment Direction
 
+Production deployment readiness is documented in:
+
+- `docs/deployment.md`
+- `docs/production-env.md`
+- `docs/rollback.md`
+- `docs/production-smoke-test.md`
+- `docs/observability.md`
+- `docs/security-hardening.md`
+
 ## Web Application
 
 - Framework: Next.js
 - Deployment Target: Vercel
+- Required production env includes `NEXT_PUBLIC_API_URL` and Sentry/Razorpay public values as
+  applicable.
 
 ## Backend API
 
 - Framework: NestJS
 - Deployment Target: Railway / Render / AWS
+- Required production env includes database, auth, CORS, AI, payment, webhook, and observability
+  variables.
+- Liveness: `/api/v1/health`
+- Readiness: `/api/v1/health/readiness`
 
 ## Database
 
 - PostgreSQL
 - Prisma ORM
+- Production migrations must use `pnpm exec prisma migrate deploy`, not `migrate dev`.
 
 ## Infrastructure
 

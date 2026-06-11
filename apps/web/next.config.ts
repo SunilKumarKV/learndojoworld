@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
+const apiOrigin = new URL(process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api/v1").origin;
+
 const nextConfig: NextConfig = {
   headers() {
     const securityHeaders = [
@@ -31,7 +33,7 @@ const nextConfig: NextConfig = {
           "font-src 'self' data:",
           "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
           "style-src 'self' 'unsafe-inline'",
-          "connect-src 'self' http://localhost:4000 https:",
+          `connect-src 'self' ${apiOrigin} https:`,
         ].join("; "),
       },
     ];
