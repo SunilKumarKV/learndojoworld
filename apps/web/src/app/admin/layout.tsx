@@ -10,6 +10,7 @@ const navItems = [
   { href: "/admin/payouts", label: "Payout review" },
   { href: "/admin/referrals", label: "Referrals" },
   { href: "/admin/beta", label: "Beta ops" },
+  { href: "/admin/beta/first-100", label: "First 100" },
 ];
 
 export default function AdminLayout({ children }: Readonly<{ children: ReactNode }>) {

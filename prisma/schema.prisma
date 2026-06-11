@@ -20,6 +20,19 @@ enum BetaAccessStatus {
   REVOKED
 }
 
+enum BetaWaitlistRoleInterest {
+  LEARNER
+  CREATOR
+  BOTH
+}
+
+enum BetaWaitlistStatus {
+  WAITLISTED
+  INVITED
+  ACCEPTED
+  REJECTED
+}
+
 enum FeedbackType {
   BUG
   FEATURE_REQUEST
@@ -447,6 +460,8 @@ model BetaAccess {
   email      String           @unique
   userId     String?          @unique @db.Uuid
   user       User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  cohortId   String?          @db.Uuid
+  cohort     BetaCohort?      @relation(fields: [cohortId], references: [id], onDelete: SetNull)
   status     BetaAccessStatus @default(INVITED)
   invitedBy  String?          @db.Uuid
   acceptedAt DateTime?
@@ -456,6 +471,34 @@ model BetaAccess {
   updatedAt  DateTime         @updatedAt
 
   @@index([status])
+  @@index([cohortId])
+  @@index([createdAt])
+}
+
+model BetaWaitlistEntry {
+  id           String                   @id @default(uuid()) @db.Uuid
+  email        String                   @unique
+  name         String?
+  roleInterest BetaWaitlistRoleInterest
+  source       String?
+  status       BetaWaitlistStatus       @default(WAITLISTED)
+  createdAt    DateTime                 @default(now())
+  updatedAt    DateTime                 @updatedAt
+
+  @@index([status])
+  @@index([roleInterest])
+  @@index([createdAt])
+}
+
+model BetaCohort {
+  id          String       @id @default(uuid()) @db.Uuid
+  name        String       @unique
+  description String?
+  targetUsers Int          @default(50)
+  betaAccess  BetaAccess[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
   @@index([createdAt])
 }
 

@@ -7,6 +7,7 @@ export const SITE_CONFIG = {
   ogImage: "/opengraph-image.png",
   links: [
     { label: "Explore", href: "/explore" },
+    { label: "Beta", href: "/beta" },
     { label: "Pricing", href: "/pricing" },
     { label: "Creators", href: "/become-creator" },
     { label: "About", href: "/about" },
