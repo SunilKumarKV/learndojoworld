@@ -48,8 +48,12 @@ dependency review, build, or E2E checks.
    ```
 
 6. Configure web env vars:
+   - `NEXT_PUBLIC_WEB_URL=https://your-domain.com`
    - `NEXT_PUBLIC_API_URL=https://api.your-domain.com/api/v1`
    - `NEXT_PUBLIC_RAZORPAY_KEY_ID`
+   - `SENTRY_DSN`
+   - `SENTRY_ENVIRONMENT=production`
+   - `SENTRY_TRACES_SAMPLE_RATE=0.05`
    - `NEXT_PUBLIC_SENTRY_DSN`
    - `NEXT_PUBLIC_SENTRY_ENVIRONMENT=production`
    - `NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE=0.05`
