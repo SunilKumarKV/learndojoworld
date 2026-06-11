@@ -11,6 +11,7 @@ Environments, or the payment/provider dashboards.
 | `DATABASE_URL`        | yes                            | Prisma/API                                | `postgresql://USER:PASSWORD@HOST:5432/DB?schema=public` |
 | `REDIS_URL`           | yes for current API validation | API config, future distributed operations | `redis://default:PASSWORD@HOST:6379`                    |
 | `WEB_ORIGIN`          | yes                            | API CORS and checkout redirect URLs       | `https://learndojoworld.com`                            |
+| `NEXT_PUBLIC_WEB_URL` | recommended                    | SEO site URL and canonical metadata       | `https://learndojoworld.com`                            |
 | `NEXT_PUBLIC_API_URL` | yes for web                    | Web API client and CSP                    | `https://api.learndojoworld.com/api/v1`                 |
 
 `WEB_ORIGIN` supports comma-separated origins for production and staging. Do not use `*`.
@@ -52,15 +53,15 @@ Payment provider keys must be live-mode keys only in production. Test keys belon
 
 ## Observability
 
-| Variable                                | Required    | Used By             | Example      |
-| --------------------------------------- | ----------- | ------------------- | ------------ |
-| `SENTRY_DSN`                            | recommended | API Sentry          | secret DSN   |
-| `SENTRY_ENVIRONMENT`                    | recommended | API Sentry          | `production` |
-| `SENTRY_TRACES_SAMPLE_RATE`             | optional    | API Sentry          | `0.05`       |
-| `NEXT_PUBLIC_SENTRY_DSN`                | recommended | Web Sentry          | public DSN   |
-| `NEXT_PUBLIC_SENTRY_ENVIRONMENT`        | recommended | Web Sentry          | `production` |
-| `NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE` | optional    | Web Sentry          | `0.05`       |
-| `LOG_LEVEL`                             | recommended | API structured logs | `info`       |
+| Variable                                | Required    | Used By                   | Example      |
+| --------------------------------------- | ----------- | ------------------------- | ------------ |
+| `SENTRY_DSN`                            | recommended | API and web server Sentry | secret DSN   |
+| `SENTRY_ENVIRONMENT`                    | recommended | API and web server Sentry | `production` |
+| `SENTRY_TRACES_SAMPLE_RATE`             | optional    | API and web server Sentry | `0.05`       |
+| `NEXT_PUBLIC_SENTRY_DSN`                | recommended | Web Sentry                | public DSN   |
+| `NEXT_PUBLIC_SENTRY_ENVIRONMENT`        | recommended | Web Sentry                | `production` |
+| `NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE` | optional    | Web Sentry                | `0.05`       |
+| `LOG_LEVEL`                             | recommended | API structured logs       | `info`       |
 
 DSNs are not authentication secrets in the same way as API keys, but still avoid committing them.
 

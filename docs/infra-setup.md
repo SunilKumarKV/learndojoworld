@@ -51,8 +51,12 @@ Admin / Creator / Learner workflows
 
 4. Set Node.js to stable Node 20.
 5. Add production env vars:
+   - `NEXT_PUBLIC_WEB_URL`
    - `NEXT_PUBLIC_API_URL`
    - `NEXT_PUBLIC_RAZORPAY_KEY_ID`
+   - `SENTRY_DSN`
+   - `SENTRY_ENVIRONMENT`
+   - `SENTRY_TRACES_SAMPLE_RATE`
    - `NEXT_PUBLIC_SENTRY_DSN`
    - `NEXT_PUBLIC_SENTRY_ENVIRONMENT`
    - `NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE`
@@ -205,6 +209,7 @@ High-level mapping:
 - [ ] `DATABASE_URL` points to Neon production database.
 - [ ] `REDIS_URL` points to Upstash.
 - [ ] `WEB_ORIGIN` matches Vercel production domain.
+- [ ] `NEXT_PUBLIC_WEB_URL` matches Vercel production domain.
 - [ ] `NEXT_PUBLIC_API_URL` matches Render API domain plus `/api/v1`.
 - [ ] Prisma migrations applied with `migrate deploy`.
 - [ ] `/api/v1/health` passes.

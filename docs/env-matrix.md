@@ -9,6 +9,7 @@ Never commit production values.
 | `APP_NAME`                              | api  | no             | no                     | `LearnDojoWorld`                                     | no     | App metadata                                             |
 | `API_PORT`                              | api  | yes            | host-dependent         | `4000`                                               | no     | NestJS listen port                                       |
 | `WEB_ORIGIN`                            | api  | yes            | yes                    | `https://learndojoworld.com`                         | no     | CORS allowlist, checkout redirects                       |
+| `NEXT_PUBLIC_WEB_URL`                   | web  | no             | recommended            | `https://learndojoworld.com`                         | no     | SEO site URL and canonical metadata                      |
 | `NEXT_PUBLIC_API_URL`                   | web  | yes            | yes                    | `https://api.learndojoworld.com/api/v1`              | no     | Web API client, Next CSP                                 |
 | `DATABASE_URL`                          | api  | yes            | yes                    | `postgresql://USER:PASSWORD@HOST/DB?sslmode=require` | yes    | Prisma/Postgres                                          |
 | `REDIS_URL`                             | api  | yes            | yes                    | `redis://default:PASSWORD@HOST:6379`                 | yes    | Current env validation, future distributed rate limiting |
@@ -26,9 +27,9 @@ Never commit production values.
 | `RAZORPAY_KEY_SECRET`                   | api  | no             | if Razorpay enabled    | `razorpay-secret`                                    | yes    | Razorpay checkout                                        |
 | `RAZORPAY_WEBHOOK_SECRET`               | api  | no             | if Razorpay enabled    | `razorpay-webhook-secret`                            | yes    | Razorpay webhook verification                            |
 | `NEXT_PUBLIC_RAZORPAY_KEY_ID`           | web  | no             | if Razorpay UI enabled | `rzp_live_...`                                       | no     | Browser checkout                                         |
-| `SENTRY_DSN`                            | api  | no             | recommended            | `https://...@sentry.io/...`                          | yes    | API Sentry                                               |
-| `SENTRY_ENVIRONMENT`                    | api  | no             | recommended            | `production`                                         | no     | API Sentry environment                                   |
-| `SENTRY_TRACES_SAMPLE_RATE`             | api  | no             | no                     | `0.05`                                               | no     | API Sentry tracing                                       |
+| `SENTRY_DSN`                            | both | no             | recommended            | `https://...@sentry.io/...`                          | yes    | API Sentry and web server Sentry                         |
+| `SENTRY_ENVIRONMENT`                    | both | no             | recommended            | `production`                                         | no     | API/web server Sentry environment                        |
+| `SENTRY_TRACES_SAMPLE_RATE`             | both | no             | no                     | `0.05`                                               | no     | API/web server Sentry tracing                            |
 | `NEXT_PUBLIC_SENTRY_DSN`                | web  | no             | recommended            | `https://...@sentry.io/...`                          | no     | Web Sentry                                               |
 | `NEXT_PUBLIC_SENTRY_ENVIRONMENT`        | web  | no             | recommended            | `production`                                         | no     | Web Sentry environment                                   |
 | `NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE` | web  | no             | no                     | `0.05`                                               | no     | Web Sentry tracing                                       |
@@ -36,7 +37,7 @@ Never commit production values.
 
 ## Provider Placement
 
-- Vercel web: only `NEXT_PUBLIC_*` values.
+- Vercel web: `NEXT_PUBLIC_*` values plus optional server-side Sentry values.
 - Render API: all API secrets and private runtime values.
 - Neon: `DATABASE_URL` source.
 - Upstash: `REDIS_URL` source.
