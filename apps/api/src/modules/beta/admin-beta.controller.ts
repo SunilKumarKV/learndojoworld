@@ -8,6 +8,7 @@ import { RolesGuard } from "../auth/guards/roles.guard";
 import type { AuthenticatedUser } from "../auth/types/authenticated-user.type";
 import { BetaService } from "./beta.service";
 import { CreateBetaAccessDto, UpdateBetaAccessDto } from "./dto/beta-access.dto";
+import { CreateBetaCohortDto } from "./dto/cohort.dto";
 import { UpdateFeedbackDto } from "./dto/feedback.dto";
 import { UpdateSupportRequestDto } from "./dto/support-request.dto";
 
@@ -20,6 +21,11 @@ export class AdminBetaController {
   @Get("dashboard")
   getDashboard() {
     return this.betaService.getBetaDashboard();
+  }
+
+  @Get("first-100")
+  getFirst100Dashboard() {
+    return this.betaService.getFirst100Dashboard();
   }
 
   @Get("access")
@@ -39,6 +45,31 @@ export class AdminBetaController {
     @Body() dto: UpdateBetaAccessDto,
   ) {
     return this.betaService.updateBetaAccess(user.id, id, dto);
+  }
+
+  @Get("waitlist")
+  listWaitlist() {
+    return this.betaService.listWaitlist();
+  }
+
+  @Post("waitlist/:id/invite")
+  inviteWaitlist(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string) {
+    return this.betaService.inviteWaitlistEntry(user.id, id);
+  }
+
+  @Post("waitlist/:id/reject")
+  rejectWaitlist(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string) {
+    return this.betaService.rejectWaitlistEntry(user.id, id);
+  }
+
+  @Get("cohorts")
+  listCohorts() {
+    return this.betaService.listCohorts();
+  }
+
+  @Post("cohorts")
+  createCohort(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreateBetaCohortDto) {
+    return this.betaService.createCohort(user.id, dto);
   }
 
   @Get("feedback")

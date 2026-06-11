@@ -22,6 +22,10 @@ export class UpdateBetaAccessDto {
   userId?: string;
 
   @IsOptional()
+  @IsUUID()
+  cohortId?: string;
+
+  @IsOptional()
   @IsString()
   @MaxLength(800)
   notes?: string;

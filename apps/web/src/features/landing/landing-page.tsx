@@ -116,13 +116,16 @@ function HeroSection() {
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Button asChild size="lg">
-              <a href="/explore">
-                Explore courses
+              <a href="/beta">
+                Join the beta
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </a>
             </Button>
             <Button asChild size="lg" variant="secondary">
-              <a href="/become-creator">Become a creator</a>
+              <a href="/explore">
+                Explore courses
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </a>
             </Button>
           </div>
         </motion.div>

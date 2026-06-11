@@ -341,6 +341,34 @@ async function runBetaOpsFlow() {
   const admin = await createUser("beta_admin", UserRole.ADMIN);
   const learnerToken = signAccessToken(learner);
   const adminToken = signAccessToken(admin);
+  const waitlistEmail = `${runId}_waitlist@${emailDomain}`;
+  const rejectedEmail = `${runId}_waitlist_reject@${emailDomain}`;
+
+  const waitlistEntry = await api<{ id: string; status: string }>("/beta/waitlist", {
+    body: {
+      email: waitlistEmail,
+      name: "E2E Waitlist User",
+      roleInterest: "LEARNER",
+      source: "E2E suite",
+    },
+    method: "POST",
+  });
+  assert(waitlistEntry.status === "WAITLISTED", "public waitlist should capture entries");
+  await expectStatus("/beta/waitlist", 409, {
+    body: {
+      email: waitlistEmail,
+      roleInterest: "LEARNER",
+    },
+    method: "POST",
+  });
+
+  const rejectedEntry = await api<{ id: string }>("/beta/waitlist", {
+    body: {
+      email: rejectedEmail,
+      roleInterest: "CREATOR",
+    },
+    method: "POST",
+  });
 
   const access = await api<{ email: string; id: string; status: string }>("/admin/beta/access", {
     body: {
@@ -351,6 +379,43 @@ async function runBetaOpsFlow() {
     token: adminToken,
   });
   assert(access.status === "INVITED", "admin should create beta invites");
+
+  const waitlist = await api<Array<{ email: string; id: string }>>("/admin/beta/waitlist", {
+    token: adminToken,
+  });
+  assert(
+    waitlist.some((entry) => entry.email === waitlistEmail),
+    "admin should see waitlist entries",
+  );
+
+  const invited = await api<{ waitlist: { status: string }; access: { status: string } }>(
+    `/admin/beta/waitlist/${waitlistEntry.id}/invite`,
+    {
+      method: "POST",
+      token: adminToken,
+    },
+  );
+  assert(invited.waitlist.status === "INVITED", "admin should invite waitlist entries");
+  assert(invited.access.status === "INVITED", "waitlist invite should create beta access");
+
+  const rejected = await api<{ status: string }>(
+    `/admin/beta/waitlist/${rejectedEntry.id}/reject`,
+    {
+      method: "POST",
+      token: adminToken,
+    },
+  );
+  assert(rejected.status === "REJECTED", "admin should reject waitlist entries");
+
+  const cohort = await api<{ id: string; targetUsers: number }>("/admin/beta/cohorts", {
+    body: {
+      name: `${runId} cohort`,
+      targetUsers: 25,
+    },
+    method: "POST",
+    token: adminToken,
+  });
+  assert(cohort.targetUsers === 25, "admin should create beta cohorts");
 
   const accepted = await api<{ status: string }>("/beta/me", { token: learnerToken });
   assert(accepted.status === "ACCEPTED", "invited user should accept beta access");
@@ -386,6 +451,14 @@ async function runBetaOpsFlow() {
   assert(dashboard.beta.totalBetaUsers >= 1, "admin beta dashboard should count beta users");
   assert(dashboard.feedback.total >= 1, "admin beta dashboard should count feedback");
   assert(dashboard.support.total >= 1, "admin beta dashboard should count support tickets");
+
+  const first100 = await api<{
+    activation: { signupCount: number };
+    waitlist: { invited: number; rejected: number };
+  }>("/admin/beta/first-100", { token: adminToken });
+  assert(first100.waitlist.invited >= 1, "first-100 dashboard should count invites");
+  assert(first100.waitlist.rejected >= 1, "first-100 dashboard should count rejections");
+  assert(first100.activation.signupCount >= 1, "first-100 dashboard should count signups");
 
   const reviewed = await api<{ status: string }>(`/admin/beta/feedback/${feedback.id}`, {
     body: { status: "REVIEWED" },
@@ -803,6 +876,10 @@ async function cleanup() {
     where: { eventId: { startsWith: `evt_${runId}` } },
   });
   await prisma.betaAccess.deleteMany({ where: { email: { endsWith: `@${emailDomain}` } } });
+  await prisma.betaWaitlistEntry.deleteMany({
+    where: { email: { endsWith: `@${emailDomain}` } },
+  });
+  await prisma.betaCohort.deleteMany({ where: { name: { startsWith: runId } } });
   if (cleanupCourseIds.size > 0) {
     await prisma.course.deleteMany({ where: { id: { in: [...cleanupCourseIds] } } });
   }

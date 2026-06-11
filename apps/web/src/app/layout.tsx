@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import "antd/dist/reset.css";
 
 import { AppProviders } from "@/app/providers";
 import { SITE_CONFIG } from "@/constants/site";
