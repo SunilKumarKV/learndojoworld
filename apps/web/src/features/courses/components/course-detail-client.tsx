@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 
@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useCourseDetail } from "@/features/courses/hooks/use-course-detail";
 import { useEnrollCourse } from "@/features/learning/hooks/use-my-learning";
 import { getEnrollmentStatus } from "@/services/enrollment.api";
+import { ApiError, hasStoredAccessToken } from "@/services/api-client";
 import { createCheckoutSession } from "@/services/payments.api";
 
 export function CourseDetailClient() {
@@ -17,8 +18,22 @@ export function CourseDetailClient() {
   const slug = params?.slug ?? "";
   const router = useRouter();
   const { data: course, isLoading, isError, error } = useCourseDetail(slug);
-  const { mutate: enroll, isPending } = useEnrollCourse();
+  const {
+    mutate: enroll,
+    isPending,
+    isError: enrollIsError,
+    error: enrollError,
+  } = useEnrollCourse();
   const [checkoutMessage, setCheckoutMessage] = useState("");
+  const [hasAuthToken, setHasAuthToken] = useState(false);
+
+  useEffect(() => {
+    setHasAuthToken(hasStoredAccessToken());
+  }, []);
+
+  function redirectToLogin() {
+    router.push(`/login?next=/course/${course?.slug ?? slug}`);
+  }
 
   const checkoutMutation = useMutation({
     mutationFn: async (gateway: "stripe" | "razorpay") => {
@@ -46,7 +61,7 @@ export function CourseDetailClient() {
   });
 
   const { data: enrollmentStatus } = useQuery({
-    enabled: Boolean(course?.id),
+    enabled: Boolean(course?.id && hasAuthToken),
     queryFn: async () => {
       const response = await getEnrollmentStatus(course!.id);
       if (!response.success)
@@ -54,6 +69,12 @@ export function CourseDetailClient() {
       return response.data;
     },
     queryKey: ["enrollment-status", course?.id],
+    retry: (failureCount, queryError) => {
+      if (queryError instanceof ApiError && [401, 403].includes(queryError.status)) {
+        return false;
+      }
+      return failureCount < 1;
+    },
   });
 
   if (isLoading)
@@ -122,37 +143,41 @@ export function CourseDetailClient() {
                     </span>
                   </div>
                   <ul className="mt-4 space-y-3">
-                    {module.lessons.map((lesson) => (
-                      <li
-                        key={lesson.id}
-                        className="rounded-2xl border border-slate-200 bg-white p-4"
-                      >
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                          <div>
-                            <p className="text-sm font-semibold text-slate-900">{lesson.title}</p>
-                            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
-                              {lesson.type}
-                            </p>
+                    {module.lessons.map((lesson) => {
+                      const canOpenLesson = Boolean(enrollmentStatus?.enrolled);
+                      return (
+                        <li
+                          key={lesson.id}
+                          className="rounded-2xl border border-slate-200 bg-white p-4"
+                        >
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                              <p className="text-sm font-semibold text-slate-900">{lesson.title}</p>
+                              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                                {lesson.type}
+                              </p>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              {lesson.isPreview ? (
+                                <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs text-emerald-700">
+                                  Preview listed
+                                </span>
+                              ) : null}
+                              <Button
+                                disabled={!canOpenLesson}
+                                variant="secondary"
+                                size="sm"
+                                onClick={() =>
+                                  router.push(`/course/${course.slug}/lesson/${lesson.id}`)
+                                }
+                              >
+                                {canOpenLesson ? "Open lesson" : "Enroll to open"}
+                              </Button>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            {lesson.isPreview ? (
-                              <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs text-emerald-700">
-                                Preview
-                              </span>
-                            ) : null}
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              onClick={() =>
-                                router.push(`/course/${course.slug}/lesson/${lesson.id}`)
-                              }
-                            >
-                              Open lesson
-                            </Button>
-                          </div>
-                        </div>
-                      </li>
-                    ))}
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
               ))}
@@ -174,9 +199,19 @@ export function CourseDetailClient() {
                   <Button
                     className="w-full"
                     disabled={isPending || enrollmentStatus?.enrolled}
-                    onClick={() => enroll(course.id)}
+                    onClick={() => {
+                      if (!hasAuthToken) {
+                        redirectToLogin();
+                        return;
+                      }
+                      enroll(course.id);
+                    }}
                   >
-                    {enrollmentStatus?.enrolled ? "Already enrolled" : "Enroll for free"}
+                    {enrollmentStatus?.enrolled
+                      ? "Already enrolled"
+                      : isPending
+                        ? "Enrolling..."
+                        : "Enroll for free"}
                   </Button>
                 </>
               ) : (
@@ -194,19 +229,40 @@ export function CourseDetailClient() {
                     <Button
                       className="w-full"
                       disabled={checkoutMutation.status === "pending" || enrollmentStatus?.enrolled}
-                      onClick={() => checkoutMutation.mutate("stripe")}
+                      onClick={() => {
+                        if (!hasAuthToken) {
+                          redirectToLogin();
+                          return;
+                        }
+                        checkoutMutation.mutate("stripe");
+                      }}
                     >
-                      {enrollmentStatus?.enrolled ? "Already enrolled" : "Pay with Stripe"}
+                      {enrollmentStatus?.enrolled
+                        ? "Already enrolled"
+                        : checkoutMutation.status === "pending"
+                          ? "Creating checkout..."
+                          : "Pay with Stripe"}
                     </Button>
                     <Button
                       variant="secondary"
                       className="w-full"
                       disabled={checkoutMutation.status === "pending" || enrollmentStatus?.enrolled}
-                      onClick={() => checkoutMutation.mutate("razorpay")}
+                      onClick={() => {
+                        if (!hasAuthToken) {
+                          redirectToLogin();
+                          return;
+                        }
+                        checkoutMutation.mutate("razorpay");
+                      }}
                     >
                       Pay with Razorpay
                     </Button>
                   </div>
+                  {!hasAuthToken ? (
+                    <p className="rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                      Sign in before checkout so access can be attached to your account.
+                    </p>
+                  ) : null}
                   {checkoutMessage ? (
                     <p className="rounded-2xl bg-slate-100 px-4 py-3 text-sm text-slate-700">
                       {checkoutMessage}
@@ -214,8 +270,18 @@ export function CourseDetailClient() {
                   ) : null}
                 </>
               )}
+              {enrollIsError ? (
+                <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {enrollError instanceof Error ? enrollError.message : "Unable to enroll."}
+                </p>
+              ) : null}
               <p className="text-xs text-slate-500">
-                Status: {enrollmentStatus?.enrolled ? "You are enrolled" : "Not enrolled yet"}
+                Status:{" "}
+                {!hasAuthToken
+                  ? "Sign in to check enrollment"
+                  : enrollmentStatus?.enrolled
+                    ? "You are enrolled"
+                    : "Not enrolled yet"}
               </p>
             </CardContent>
           </Card>

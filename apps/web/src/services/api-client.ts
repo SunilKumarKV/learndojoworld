@@ -46,6 +46,10 @@ function getStoredTokens() {
   }
 }
 
+export function hasStoredAccessToken() {
+  return Boolean(getStoredTokens()?.accessToken);
+}
+
 function normalizeApiResponse<T>(body: unknown): ApiResponse<T> {
   if (body && typeof body === "object" && "success" in body) {
     const typedBody = body as ApiResponse<T> & ApiErrorBody;

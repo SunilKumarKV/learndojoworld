@@ -5,7 +5,7 @@ import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { AuthenticatedUser } from "../auth/types/authenticated-user.type";
 import { ApplyReferralDto } from "./dto/apply-referral.dto";
 
-@Controller("v1/referrals")
+@Controller("referrals")
 @UseGuards(JwtAuthGuard)
 export class ReferralsController {
   constructor(private readonly referralsService: ReferralsService) {}

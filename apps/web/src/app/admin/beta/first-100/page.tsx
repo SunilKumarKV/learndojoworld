@@ -92,6 +92,13 @@ export default function AdminFirst100Page() {
             </h2>
           </CardHeader>
           <CardContent className="space-y-3">
+            {invite.isError || reject.isError ? (
+              <p className="rounded-md bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
+                {(invite.error ?? reject.error) instanceof Error
+                  ? (invite.error ?? reject.error)?.message
+                  : "Unable to update waitlist entry."}
+              </p>
+            ) : null}
             {(waitlist.data ?? []).length === 0 ? (
               <p className="text-sm text-slate-600">No waitlist entries yet.</p>
             ) : (
@@ -109,19 +116,29 @@ export default function AdminFirst100Page() {
                   </div>
                   <div className="flex gap-2">
                     <Button
-                      disabled={invite.isPending || entry.status === "ACCEPTED"}
+                      disabled={
+                        invite.isPending ||
+                        reject.isPending ||
+                        entry.status === "ACCEPTED" ||
+                        entry.status === "REJECTED"
+                      }
                       size="sm"
                       onClick={() => invite.mutate(entry.id)}
                     >
-                      Invite
+                      {invite.isPending ? "Inviting..." : "Invite"}
                     </Button>
                     <Button
-                      disabled={reject.isPending || entry.status === "ACCEPTED"}
+                      disabled={
+                        invite.isPending ||
+                        reject.isPending ||
+                        entry.status === "ACCEPTED" ||
+                        entry.status === "REJECTED"
+                      }
                       size="sm"
                       variant="secondary"
                       onClick={() => reject.mutate(entry.id)}
                     >
-                      Reject
+                      {reject.isPending ? "Rejecting..." : "Reject"}
                     </Button>
                   </div>
                 </div>
@@ -138,6 +155,13 @@ export default function AdminFirst100Page() {
             </h2>
           </CardHeader>
           <CardContent className="space-y-4">
+            {createCohort.isError ? (
+              <p className="rounded-md bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
+                {createCohort.error instanceof Error
+                  ? createCohort.error.message
+                  : "Unable to create cohort."}
+              </p>
+            ) : null}
             <div className="space-y-3">
               <input
                 className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm"
@@ -159,27 +183,33 @@ export default function AdminFirst100Page() {
                 onChange={(event) => setTargetUsers(Number(event.target.value))}
               />
               <Button
-                disabled={!cohortName || createCohort.isPending}
+                disabled={!cohortName.trim() || targetUsers < 1 || createCohort.isPending}
                 onClick={() =>
                   createCohort.mutate({
-                    name: cohortName,
+                    name: cohortName.trim(),
                     targetUsers,
                     ...(cohortDescription.trim() ? { description: cohortDescription.trim() } : {}),
                   })
                 }
               >
-                Create cohort
+                {createCohort.isPending ? "Creating..." : "Create cohort"}
               </Button>
             </div>
             <div className="space-y-2">
-              {data.cohorts.map((cohort) => (
-                <div key={cohort.id} className="rounded-lg border border-slate-200 p-3">
-                  <p className="font-semibold text-slate-950">{cohort.name}</p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    {cohort._count?.betaAccess ?? 0}/{cohort.targetUsers} users
-                  </p>
-                </div>
-              ))}
+              {data.cohorts.length === 0 ? (
+                <p className="rounded-lg bg-slate-50 p-4 text-sm text-slate-600">
+                  No cohorts have been created yet.
+                </p>
+              ) : (
+                data.cohorts.map((cohort) => (
+                  <div key={cohort.id} className="rounded-lg border border-slate-200 p-3">
+                    <p className="font-semibold text-slate-950">{cohort.name}</p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {cohort._count?.betaAccess ?? 0}/{cohort.targetUsers} users
+                    </p>
+                  </div>
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
@@ -203,20 +233,28 @@ export default function AdminFirst100Page() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
-              {data.betaUserProgress.map((user) => (
-                <tr key={user.betaAccessId}>
-                  <td className="py-3">
-                    <p className="font-semibold text-slate-950">{user.email}</p>
-                    <p className="text-xs text-slate-500">{user.cohort?.name ?? "No cohort"}</p>
+              {data.betaUserProgress.length === 0 ? (
+                <tr>
+                  <td className="py-6 text-sm text-slate-600" colSpan={7}>
+                    No accepted beta users have linked accounts yet.
                   </td>
-                  <td>{statusIcon(user.onboardingCompleted)}</td>
-                  <td>{statusIcon(user.firstCourseEnrollment)}</td>
-                  <td>{statusIcon(user.firstLessonCompleted)}</td>
-                  <td>{statusIcon(user.firstAIMessage)}</td>
-                  <td>{user.feedbackSubmitted}</td>
-                  <td>{user.supportRequests}</td>
                 </tr>
-              ))}
+              ) : (
+                data.betaUserProgress.map((user) => (
+                  <tr key={user.betaAccessId}>
+                    <td className="py-3">
+                      <p className="font-semibold text-slate-950">{user.email}</p>
+                      <p className="text-xs text-slate-500">{user.cohort?.name ?? "No cohort"}</p>
+                    </td>
+                    <td>{statusIcon(user.onboardingCompleted)}</td>
+                    <td>{statusIcon(user.firstCourseEnrollment)}</td>
+                    <td>{statusIcon(user.firstLessonCompleted)}</td>
+                    <td>{statusIcon(user.firstAIMessage)}</td>
+                    <td>{user.feedbackSubmitted}</td>
+                    <td>{user.supportRequests}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </CardContent>
