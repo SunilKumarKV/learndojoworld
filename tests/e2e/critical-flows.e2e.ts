@@ -262,33 +262,33 @@ async function runReferralFlow() {
   const secondInviteeToken = signAccessToken(secondInvitee);
   const adminToken = signAccessToken(admin);
 
-  const inviterReferral = await api<{ referralCode: string }>("/v1/referrals/me", {
+  const inviterReferral = await api<{ referralCode: string }>("/referrals/me", {
     token: inviterToken,
   });
-  const inviteeReferral = await api<{ referralCode: string }>("/v1/referrals/me", {
+  const inviteeReferral = await api<{ referralCode: string }>("/referrals/me", {
     token: inviteeToken,
   });
 
-  await expectStatus("/v1/referrals/apply", 400, {
+  await expectStatus("/referrals/apply", 400, {
     body: { code: inviteeReferral.referralCode },
     method: "POST",
     token: inviteeToken,
   });
 
-  const applied = await api<{ eventId: string; status: string }>("/v1/referrals/apply", {
+  const applied = await api<{ eventId: string; status: string }>("/referrals/apply", {
     body: { code: inviterReferral.referralCode },
     method: "POST",
     token: inviteeToken,
   });
   assert(applied.status === "PENDING", "referral apply should create a pending event");
 
-  await expectStatus("/v1/referrals/apply", 409, {
+  await expectStatus("/referrals/apply", 409, {
     body: { code: inviterReferral.referralCode },
     method: "POST",
     token: inviteeToken,
   });
 
-  await api("/v1/referrals/apply", {
+  await api("/referrals/apply", {
     body: { code: inviterReferral.referralCode },
     method: "POST",
     token: secondInviteeToken,

@@ -45,18 +45,18 @@ export interface ReferralStatsResponse {
 
 export const referralsApi = {
   getMe: async (): Promise<ReferralMeResponse> => {
-    const response = await apiClient<ReferralMeResponse>("/api/v1/referrals/me");
+    const response = await apiClient<ReferralMeResponse>("/referrals/me");
     return response.data;
   },
   getStats: async (): Promise<ReferralStatsResponse> => {
-    const response = await apiClient<ReferralStatsResponse>("/api/v1/referrals/stats");
+    const response = await apiClient<ReferralStatsResponse>("/referrals/stats");
     return response.data;
   },
   applyCode: async (
     code: string,
   ): Promise<{ message: string; eventId: string; status: string }> => {
     const response = await apiClient<{ message: string; eventId: string; status: string }>(
-      "/api/v1/referrals/apply",
+      "/referrals/apply",
       {
         method: "POST",
         body: JSON.stringify({ code }),

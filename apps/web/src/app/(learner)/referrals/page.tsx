@@ -9,19 +9,12 @@ import { Copy, Check, Users, Clock, Gift } from "lucide-react";
 import { LoadingState } from "@/features/dashboard/components/loading-state";
 import { ErrorState } from "@/features/dashboard/components/error-state";
 
-interface ApiError {
-  response?: {
-    data?: {
-      message?: string;
-    };
-  };
-}
-
 export default function ReferralsPage() {
   const queryClient = useQueryClient();
   const [copied, setCopied] = useState(false);
   const [applyCode, setApplyCode] = useState("");
   const [applyError, setApplyError] = useState("");
+  const [applySuccess, setApplySuccess] = useState("");
 
   const {
     data: me,
@@ -43,11 +36,11 @@ export default function ReferralsPage() {
       void queryClient.invalidateQueries({ queryKey: ["referrals"] });
       setApplyCode("");
       setApplyError("");
-      alert("Referral code applied successfully!");
+      setApplySuccess("Referral code applied successfully.");
     },
     onError: (error: unknown) => {
-      const err = error as ApiError;
-      setApplyError(err?.response?.data?.message || "Failed to apply referral code.");
+      setApplySuccess("");
+      setApplyError(error instanceof Error ? error.message : "Failed to apply referral code.");
     },
   });
 
@@ -105,11 +98,16 @@ export default function ReferralsPage() {
               type="text"
               placeholder="Enter referral code"
               value={applyCode}
-              onChange={(e) => setApplyCode(e.target.value)}
+              onChange={(e) => {
+                setApplyCode(e.target.value);
+                setApplyError("");
+                setApplySuccess("");
+              }}
               className="w-full px-4 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 uppercase"
               maxLength={8}
             />
             {applyError && <p className="text-xs text-destructive">{applyError}</p>}
+            {applySuccess && <p className="text-xs font-semibold text-green-700">{applySuccess}</p>}
             <Button
               type="submit"
               className="w-full"

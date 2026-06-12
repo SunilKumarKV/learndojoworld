@@ -120,6 +120,13 @@ export default function AdminBetaPage() {
 
       <Card>
         <CardContent className="space-y-4 pt-6">
+          {createAccess.isError ? (
+            <p className="rounded-md bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
+              {createAccess.error instanceof Error
+                ? createAccess.error.message
+                : "Unable to invite beta user."}
+            </p>
+          ) : null}
           <div className="flex flex-col gap-3 lg:flex-row">
             <input
               className="h-11 flex-1 rounded-md border border-slate-300 px-3 text-sm"
@@ -135,66 +142,89 @@ export default function AdminBetaPage() {
               onChange={(event) => setNotes(event.target.value)}
             />
             <Button
-              disabled={!email || createAccess.isPending}
+              disabled={!email.trim() || createAccess.isPending}
               onClick={() =>
                 createAccess.mutate({
-                  email,
+                  email: email.trim(),
                   ...(notes.trim() ? { notes: notes.trim() } : {}),
                 })
               }
             >
               <UserPlus className="h-4 w-4" />
-              Invite
+              {createAccess.isPending ? "Inviting..." : "Invite"}
             </Button>
           </div>
         </CardContent>
       </Card>
 
+      {updateAccess.isError || updateFeedback.isError || updateSupport.isError ? (
+        <p className="rounded-md bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+          {(updateAccess.error ?? updateFeedback.error ?? updateSupport.error) instanceof Error
+            ? (updateAccess.error ?? updateFeedback.error ?? updateSupport.error)?.message
+            : "Unable to update beta operations item."}
+        </p>
+      ) : null}
+
       <section className="grid gap-6 xl:grid-cols-3">
         <OpsList title="Beta access">
-          {(access.data ?? []).map((item) => (
-            <div key={item.id} className="rounded-lg border border-slate-200 p-4">
-              <p className="font-semibold text-slate-900">{item.email}</p>
-              <p className="text-xs text-slate-500">
-                {item.user?.username ?? "No linked user yet"}
-              </p>
-              <StatusSelect
-                value={item.status}
-                values={accessStatuses}
-                onChange={(status) => updateAccess.mutate({ id: item.id, status })}
-              />
-            </div>
-          ))}
+          {(access.data ?? []).length === 0 ? (
+            <EmptyOpsMessage message="No beta access records yet." />
+          ) : (
+            (access.data ?? []).map((item) => (
+              <div key={item.id} className="rounded-lg border border-slate-200 p-4">
+                <p className="font-semibold text-slate-900">{item.email}</p>
+                <p className="text-xs text-slate-500">
+                  {item.user?.username ?? "No linked user yet"}
+                </p>
+                <StatusSelect
+                  disabled={updateAccess.isPending}
+                  value={item.status}
+                  values={accessStatuses}
+                  onChange={(status) => updateAccess.mutate({ id: item.id, status })}
+                />
+              </div>
+            ))
+          )}
         </OpsList>
 
         <OpsList title="Feedback">
-          {(feedback.data ?? []).map((item) => (
-            <div key={item.id} className="rounded-lg border border-slate-200 p-4">
-              <p className="text-xs font-semibold uppercase text-primary">{item.type}</p>
-              <p className="mt-2 line-clamp-3 text-sm text-slate-700">{item.message}</p>
-              <p className="mt-2 text-xs text-slate-500">{item.user?.email}</p>
-              <StatusSelect
-                value={item.status}
-                values={feedbackStatuses}
-                onChange={(status) => updateFeedback.mutate({ id: item.id, status })}
-              />
-            </div>
-          ))}
+          {(feedback.data ?? []).length === 0 ? (
+            <EmptyOpsMessage message="No feedback has been submitted yet." />
+          ) : (
+            (feedback.data ?? []).map((item) => (
+              <div key={item.id} className="rounded-lg border border-slate-200 p-4">
+                <p className="text-xs font-semibold uppercase text-primary">{item.type}</p>
+                <p className="mt-2 line-clamp-3 text-sm text-slate-700">{item.message}</p>
+                <p className="mt-2 text-xs text-slate-500">{item.user?.email}</p>
+                <StatusSelect
+                  disabled={updateFeedback.isPending}
+                  value={item.status}
+                  values={feedbackStatuses}
+                  onChange={(status) => updateFeedback.mutate({ id: item.id, status })}
+                />
+              </div>
+            ))
+          )}
         </OpsList>
 
         <OpsList title="Support">
-          {(support.data ?? []).map((item) => (
-            <div key={item.id} className="rounded-lg border border-slate-200 p-4">
-              <p className="font-semibold text-slate-900">{item.subject}</p>
-              <p className="mt-2 line-clamp-3 text-sm text-slate-700">{item.message}</p>
-              <p className="mt-2 text-xs text-slate-500">{item.user?.email}</p>
-              <StatusSelect
-                value={item.status}
-                values={supportStatuses}
-                onChange={(status) => updateSupport.mutate({ id: item.id, status })}
-              />
-            </div>
-          ))}
+          {(support.data ?? []).length === 0 ? (
+            <EmptyOpsMessage message="No support tickets are open yet." />
+          ) : (
+            (support.data ?? []).map((item) => (
+              <div key={item.id} className="rounded-lg border border-slate-200 p-4">
+                <p className="font-semibold text-slate-900">{item.subject}</p>
+                <p className="mt-2 line-clamp-3 text-sm text-slate-700">{item.message}</p>
+                <p className="mt-2 text-xs text-slate-500">{item.user?.email}</p>
+                <StatusSelect
+                  disabled={updateSupport.isPending}
+                  value={item.status}
+                  values={supportStatuses}
+                  onChange={(status) => updateSupport.mutate({ id: item.id, status })}
+                />
+              </div>
+            ))
+          )}
         </OpsList>
       </section>
     </div>
@@ -232,11 +262,17 @@ function OpsList({ children, title }: { children: ReactNode; title: string }) {
   );
 }
 
+function EmptyOpsMessage({ message }: { message: string }) {
+  return <p className="rounded-lg bg-slate-50 p-4 text-sm text-slate-600">{message}</p>;
+}
+
 function StatusSelect<TValue extends string>({
+  disabled = false,
   onChange,
   value,
   values,
 }: {
+  disabled?: boolean;
   onChange: (value: TValue) => void;
   value: TValue;
   values: TValue[];
@@ -244,6 +280,7 @@ function StatusSelect<TValue extends string>({
   return (
     <select
       className="mt-3 h-9 w-full rounded-md border border-slate-300 px-2 text-xs font-semibold"
+      disabled={disabled}
       value={value}
       onChange={(event) => onChange(event.target.value as TValue)}
     >

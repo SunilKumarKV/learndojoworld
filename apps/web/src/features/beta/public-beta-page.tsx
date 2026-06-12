@@ -19,6 +19,8 @@ export function PublicBetaPage() {
   const [email, setEmail] = useState("");
   const [source, setSource] = useState("");
   const [roleInterest, setRoleInterest] = useState<BetaWaitlistRoleInterest>("LEARNER");
+  const [formError, setFormError] = useState("");
+  const emailIsValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
   const mutation = useMutation({
     mutationFn: () =>
@@ -32,9 +34,20 @@ export function PublicBetaPage() {
       setName("");
       setEmail("");
       setSource("");
+      setFormError("");
       setRoleInterest("LEARNER");
     },
   });
+
+  function submitWaitlist() {
+    if (!emailIsValid) {
+      setFormError("Enter a valid email address.");
+      return;
+    }
+
+    setFormError("");
+    mutation.mutate();
+  }
 
   return (
     <main className="min-h-screen bg-slate-50">
@@ -86,7 +99,10 @@ export function PublicBetaPage() {
                 placeholder="Email"
                 type="email"
                 value={email}
-                onChange={(event) => setEmail(event.target.value)}
+                onChange={(event) => {
+                  setEmail(event.target.value);
+                  setFormError("");
+                }}
               />
               <select
                 className="h-11 w-full rounded-md border border-slate-300 px-3 text-sm"
@@ -113,6 +129,11 @@ export function PublicBetaPage() {
                   You are on the beta waitlist.
                 </p>
               )}
+              {formError ? (
+                <p className="rounded-md bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
+                  {formError}
+                </p>
+              ) : null}
               {mutation.isError && (
                 <p className="rounded-md bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
                   {mutation.error instanceof Error
@@ -123,10 +144,10 @@ export function PublicBetaPage() {
 
               <Button
                 className="w-full"
-                disabled={!email || mutation.isPending}
-                onClick={() => mutation.mutate()}
+                disabled={!email.trim() || mutation.isPending}
+                onClick={submitWaitlist}
               >
-                Join beta waitlist
+                {mutation.isPending ? "Joining waitlist..." : "Join beta waitlist"}
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </CardContent>
